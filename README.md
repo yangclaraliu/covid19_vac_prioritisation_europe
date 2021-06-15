@@ -1,4 +1,6 @@
-Optimising health and economic impacts of COVID-19 vaccine rollout strategies in the WHO European Region
+# Optimising health and economic impacts of COVID-19 vaccine rollout strategies in the WHO European Region
+
+
 [Yang Liu](https://github.com/yangclaraliu), [Frank Sandmann](https://github.com/FGSandmann), [Rosanna Barnard](https://github.com/rosannaclairebarnard), [Carl AB Pearson](https://github.com/pearsonca), [Stefan Flasche](https://github.com/StefanFlasche), [Mark Jit](https://www.lshtm.ac.uk/aboutus/people/jit.mark)
 ## Code
 - `0_LoadData.R`: load data for geography, epi parameters (susceptibility, clinical fractions), demographics, contacts, health economic parameters, mobility, stringency, COVID-19 mortality; establish scenario to be tested; load support functions and packages
@@ -30,4 +32,8 @@ pacman::p_load(
 - gs_fit_best: fitting for R0 and infection introduction dates using exhaustive search; equal distance within ranges
 - gs_fit_top49: similar to gs_fit_best, but examined the top 49 maximum liklihood to see if there's cases where peaks are missed.
 - `check_setting.png`: these figures are used to check the validity of projected mobility.
+<<<<<<< HEAD
 
+=======
+### suppelemental
+>>>>>>> master
