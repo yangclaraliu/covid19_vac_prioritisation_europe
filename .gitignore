@@ -1,0 +1,50 @@
+# History files
+.Rhistory
+.Rapp.history
+
+# Session Data files
+.RData
+
+# User-specific files
+.Ruserdata
+
+# Example code in package build process
+*-Ex.R
+
+# Output files from R CMD build
+/*.tar.gz
+
+# Output files from R CMD check
+/*.Rcheck/
+
+# RStudio files
+.Rproj.user/
+
+# produced vignettes
+vignettes/*.html
+vignettes/*.pdf
+
+# OAuth2 token, see https://github.com/hadley/httr/releases/tag/v0.3
+.httr-oauth
+
+# knitr and R markdown default cache directories
+*_cache/
+/cache/
+
+# Temporary files created by R markdown
+*.utf8.md
+*.knit.md
+
+# skip dta files
+/data/
+
+# code folder
+/code/covidm_for_fitting
+/code/deprecated
+/code/Report/
+
+# figure folder
+/figs/intermediate/DEoptim_fit_2
+/figs/intermediate/DEoptim_fit_3
+/figs/intermediate/gs_fit_best
+/figs/intermediate/gs-fit_top49
