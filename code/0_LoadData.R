@@ -181,7 +181,7 @@ df_VSL <- rbind(
 ) %>%
   mutate(wb = countrycode(country_name, "country.name", "wb"))
 
-load("~/GitHub/COVID19_EUR_VAC/data/WB_GDP_per_capita.rda") 
+load("data/WB_GDP_per_capita.rda") 
 GDPpc <- WB_GDP_per_capita %>% 
   setNames(c("population", "wb", "indicator", "GDPpc")) %>%
   mutate(wb = countrycode(population, "country.name", "wb")) %>% 
@@ -300,8 +300,6 @@ read_csv("data/oxcgrt.csv",
                values_to = "C1") %>% 
   mutate(C1 = if_else(is.na(C1), 0, C1)) -> oxcgrt
 
-oxcgrt
-
 ##### stringency index #####
 si <- read_csv("data/oxcgrt.csv",
                col_types = cols(RegionName = col_character(), 
@@ -370,10 +368,10 @@ epi <- data.table(owid) %>%
 load("data/intermediate/out_combined.rdata")
 # out_2 <- read_rds("data/intermediate/out_2.rds")
 model_selected_2 <- read_rds("data/intermediate/DEoptim2_selected.rds") %>% 
-  mutate(date = ymd("2019-12-31") + t)
+  mutate(date = ymd("2019-12-01") + t)
 # out_3 <- read_rds("data/intermediate/out_3.rds")
 model_selected_3 <- read_rds("data/intermediate/DEoptim3_selected.rds") %>% 
-  mutate(date = ymd("2019-12-31") + t)
+  mutate(date = ymd("2019-12-01") + t)
 
 #gs_fitted_v2_imputed
 #### load supporting functions ####
@@ -942,9 +940,9 @@ tmp %>% bind_rows(.id = "country_index") %>%
 
 rm(tmp)
 
-covar[["non_S"]] <- readRDS("~/GitHub/COVID19_EUR_VAC/data/intermediate/non_S_2.rds")
+covar[["non_S"]] <- readRDS("data/intermediate/non_S_2.rds")
 
-res <- readRDS("~/GitHub/COVID19_EUR_VAC/data/intermediate/priority_selection_2.rds")
+res <- readRDS("data/intermediate/priority_selection_2.rds")
 
 res[[3]] %>% 
   bind_rows(.id = "ROS") %>% 

@@ -369,14 +369,14 @@ predict_outbreak <- function(
     "+"(lubridate::ymd(params[[1]]$param$date0)) %>%
     enframe(value = "date_start_vac", name = "id") %>%
     mutate(
-      m1 = date_start_vac %m+% months(1),
-      m4 = date_start_vac %m+% months(4),
-      m7 = date_start_vac %m+% months(7)
+      m1 = date_start_vac %m+% months(6),
+      m2 = date_start_vac %m+% months(12),
+      m3 = date_start_vac %m+% months(18)
     ) -> date_start_vac
   
   # res <- dyna <- daily_vac <- vac_para <- list()
   res <- lapply(seq_along(prp), function(x) cm_simulate(params[[x]]$param))
-   res_baseline <- cm_simulate(params_baseline)
+  res_baseline <- cm_simulate(params_baseline)
   dyna <- lapply(res, "[[", "dynamics")
   #  vac_para <- lapply(params, "[[", "vac_para")
   daily_vac <- lapply(params, "[[", "daily_vac") %>%
@@ -421,7 +421,7 @@ predict_outbreak <- function(
            AEFI_loss = if_else(is.na(AEFI_loss), 0, AEFI_loss),
            QALYloss = adjQALEdisc + AEFI_loss + QALYcases) -> econ_full
   
-  date_start_vac[, c("m1", "m4", "m7")] %>%
+  date_start_vac[, paste0("m",1:3)] %>%
     mutate_all(as.character) %>%
     unlist() %>%
     as.vector() %>%
@@ -510,6 +510,7 @@ predict_outbreak <- function(
     date_start_vac = date_start_vac,
     res_baseline = res_baseline,
     size = size,
+    dyna = dyna,
     vac_para = vac_para_ROS
   )
   

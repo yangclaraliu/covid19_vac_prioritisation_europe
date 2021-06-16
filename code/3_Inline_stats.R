@@ -404,8 +404,8 @@ for(i in 1:5){
            !wb %in% members_remove) %>% 
     pivot_wider(names_from = type,
                 values_from = vars[i]) %>% 
-    mutate(p1 = (a - basic)/basic,
-           p2 = (b - basic)/basic,
+    mutate(p1 = (a - basic)/basic %>% round(., 2),
+           p2 = (b - basic)/basic %>% round(., 2),
            compare = p1 < p2)-> tmp[[i]]
 }
 
@@ -436,3 +436,102 @@ tmp %>%
   theme_bw() -> p
 
 ggsave("figs/supplemental/adol.png", p, height = 8, width = 12)
+
+tmp %>% 
+  bind_rows(.id = "metric") %>% 
+  mutate(metric = factor(metric,
+                         levels = 1:5,
+                         labels = c("Deaths","Cases", 
+                                    "Adj. Life Expectancy",
+                                    "Quality Adj. Life Years",
+                                    "Human Capital"
+                         ))) %>% 
+  filter(p1 > 0 | p2 > 0) %>% 
+  arrange(p1, p2) %>% 
+  group_by(population) %>% tally
+
+# AZE can be an example
+i = 44
+m <- model_selected_2
+
+lapply(1:4, function(j){
+  predict_outbreak(cn = m$country_name[i],
+                   date_start = as.character(as.Date("2019-12-01") +
+                                               m$t[i]),
+                   ve_i = 0.95,
+                   ms_date = combo[[j]]$ms_date,
+                   ms_cov = combo[[j]]$ms_cov,
+                   ve_d = 0,
+                   R = m$r[i],
+                   wane = c(52*3, 1),
+                   prp = priority_policy,
+  )
+}) -> before
+
+lapply(1:4, function(j){
+  predict_outbreak(cn = m$country_name[i],
+                   date_start = as.character(as.Date("2019-12-01") +
+                                               m$t[i]),
+                   ve_i = 0.95,
+                   ms_date = combo[[j]]$ms_date,
+                   ms_cov = combo[[j]]$ms_cov,
+                   ve_d = 0,
+                   R = m$r[i],
+                   wane = c(52*3, 1),
+                   prp = priority_policy2,
+  )
+}) -> after
+
+lapply(before, "[[", "dyna") %>% 
+  map(bind_rows, .id = "policy") %>% 
+  map(mutate, policy = paste0("p",policy)) %>% 
+  bind_rows(.id = "ROS") %>% 
+  mutate(ROS = paste0("R",ROS)) -> seg1
+
+lapply(after, "[[", "dyna") %>% 
+  map(bind_rows, .id = "policy") %>% 
+  map(mutate, policy = factor(policy, 
+                              levels = 1:4,
+                              labels = names(priority_policy2))) %>% 
+  bind_rows(.id = "ROS") %>% 
+  mutate(ROS = paste0("R",ROS)) -> seg2
+
+bind_rows(seg1, seg2) %>% 
+  filter(ROS %in% c("R3","R4"),
+         !policy %in% c("p1", "p2")) %>% 
+  mutate(date = t + ymd("2019-12-01") + m$t[i])
+
+
+
+before[[4]]$main %>% 
+  filter(policy %in% c(0, "p3","p4")) %>% 
+  bind_rows(after[[4]]$main) %>% distinct() %>% 
+  # select(t.x, policy, starts_with("Y", ignore.case = T)) %>% 
+  # pivot_longer(starts_with("Y")) %>% 
+  arrange(policy) %>%   dplyr::select(t.x, policy, S, E,  Ip, Is, foi,
+                                      Ia, R, V, cases, foi, death_o) %>%
+  group_by(t.x, policy) %>% pivot_longer(cols = c(S, E,  Ip, Is, Ia, foi,
+                                                  R, V, cases, foi, death_o)) %>%
+  separate(policy, into = c("policy", "variation"), sep = "_") %>%
+  filter(policy != 0) %>% 
+  # mutate(name = parse_number(name)) %>% 
+  ggplot(., aes(x = t.x, y = value, 
+                # group = name, color = name
+                group = variation, 
+                color = variation
+                )) +
+  geom_line() +
+  facet_wrap(name~policy, scales = "free")
+
+bind_rows(w, wo) %>% 
+  distinct() %>% 
+  filter(w == "Before 2023",
+         population == "Sweden") %>% 
+  dplyr::select(ROS, policy, death_o) %>% 
+  mutate(policy = case_when(policy == 3 ~ "p3",
+                            policy == 4 ~ "p4",
+                            TRUE ~ policy)) %>% 
+  pivot_wider(names_from = policy, values_from = death_o) %>% 
+  dplyr::select(c("ROS", "0", "p3","p3_a","p3_b","p4","p4_a","p4_b"))
+
+
