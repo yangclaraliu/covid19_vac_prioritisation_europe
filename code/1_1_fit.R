@@ -106,7 +106,7 @@ for(i in r){
           lower = c(t_LL, 1.5),
           upper = c(t_UL, 5),
           control = controlDE) -> out_2[[i]]
-  res_2 <- out_2[[i]]$member$bestmemit %>% tail(1)
+  res_2 <- out_2[[i]]$optim$bestmem# out_2[[i]]$member$bestmemit %>% tail(1)
   res_2[1] <- round(res_2[1])
   
   # three parameter fitting
@@ -114,7 +114,7 @@ for(i in r){
           lower = c(t_LL, 1.5, 0.01),
           upper = c(t_UL, 5, 1),
           control = controlDE) -> out_3[[i]]
-  res_3 <- out_3[[i]]$member$bestmemit %>% tail(1)
+  res_3 <- out_3[[i]]$optim$bestmem# out_3[[i]]$member$bestmemit %>% tail(1)
   res_3[1] <- round(res_3[1])
 
   # plot results
@@ -162,15 +162,40 @@ for(i in r){
     # geom_point(aes(y = deaths_predicted*res[3]), color = "blue") +
     theme_bw() ->  p_tmp
     
-  ggsave(paste0("figs/intermediate/DEoptim_fit_combined/", cn, ".png"),
+  ggsave(paste0("figs/intermediate/DEoptim_fit_combined_debug/", cn, ".png"),
            plot  = p_tmp,
            width = 10, height = 10)
   
   print(paste0(cn, " completed!"))
-  save(out_2, out_3, file = "data/intermediate/out_combined.rdata")
+  save(out_2, out_3, file = "data/intermediate/out_combined_debug.rdata")
   rm(cn)
 }
-  # optim(par = c(80, 2), 
+
+# out_2[[1]]$optim$
+
+
+# lapply(out_2, "[[", "optim") %>% lapply(., "[[", "bestmem") -> out_2_list
+# out_2_list %>% map(is.null) %>% unlist %>% which -> out_2_null
+# for(i in out_2_null) out_2_list[[i]] <- data.frame(par1 = NA, par2 = NA)
+# 
+# out_2_list %>% bind_rows() %>%
+#   setNames(c("t","r")) %>%
+#   bind_cols(members) %>%
+#   mutate(date = ymd("2019-12-01") + t) -> tmp
+# write_rds(tmp, "data/intermediate/DEoptim2_selected_debug.rds")
+# 
+# lapply(out_3, "[[", "optim") %>% lapply(., "[[", "bestmem") -> out_3_list
+# out_3_list %>% map(is.null) %>% unlist %>% which -> out_3_null
+# for(i in out_3_null) out_3_list[[i]] <- data.frame(par1 = NA, par2 = NA, par3 = NA)
+# 
+# out_3_list %>% bind_rows() %>%
+#   setNames(c("t","r","par3")) %>%
+#   bind_cols(members) %>%
+#   mutate(date = ymd("2019-12-01") + t) -> tmp
+# write_rds(tmp, "data/intermediate/DEoptim3_selected_debug.rds")
+
+
+# optim(par = c(80, 2), 
   #       fn = fit_func, 
   #       # gr = next_fun,
   #       lower = c(t_LL, 1.5),
@@ -239,7 +264,7 @@ for(i in r){
   # print(paste0("Task completed for: ", cn)) 
   
 #}
-out_2 <- readRDS("data/intermediate/out_3.rds")
+# out_2 <- readRDS("data/intermediate/out_3.rds")
 
 # lapply(lapply(out, "[[", "member"), "[[", "bestvalit") %>%
 #   map(enframe) %>%
@@ -256,17 +281,17 @@ out_2 <- readRDS("data/intermediate/out_3.rds")
 #        plot  = p_tmp,
 #        width = 20, height = 10)
 
-lapply(lapply(out_3, "[[", "member"), "[[", "bestmemit") %>%
-  map(tail, 1) %>%
-  map(data.frame) %>%
-  bind_rows(., .id = "country_index") %>%
-  mutate(country_index = as.numeric(country_index)) %>%
-  left_join(members, by = "country_index") %>%
-  mutate(fit = if_else(wb %in% members_remove, "fail", "pass")) %>%
-  rename(t = par1, r = par2) %>%
-  mutate(t = round(t),
-         date = ymd("2020-12-01") + t) %>%
-  write_rds(., "data/intermediate/DEoptim3_selected.rds")
+# lapply(lapply(out_3, "[[", "member"), "[[", "bestmemit") %>%
+#   map(tail, 1) %>%
+#   map(data.frame) %>%
+#   bind_rows(., .id = "country_index") %>%
+#   mutate(country_index = as.numeric(country_index)) %>%
+#   left_join(members, by = "country_index") %>%
+#   mutate(fit = if_else(wb %in% members_remove, "fail", "pass")) %>%
+#   rename(t = par1, r = par2) %>%
+#   mutate(t = round(t),
+#          date = ymd("2020-12-01") + t) %>%
+#   write_rds(., "data/intermediate/DEoptim3_selected.rds")
 
 # DEoptim_model_selected <- readRDS("data/intermediate/DEoptim_model2_selected.rds")
 

@@ -7,6 +7,13 @@ pacman::p_load(
   imputeTS, cowplot
 )
 
+#### import new contact matrices from Prem et al. ####
+load("data/contact_all.rdata")
+load("data/contact_work.rdata")
+load("data/contact_home.rdata")
+load("data/contact_school.rdata")
+load("data/contact_others.rdata")
+
 #### load member state indformation ####
 "Albania, Andorra, Armenia, Austria, Azerbaijan, Belarus, Belgium, 
 Bosnia and Herzegovina, Bulgaria, Croatia, Cyprus, Czech Republic, Denmark, 
@@ -26,7 +33,8 @@ United Kingdom of Great Britain, Uzbekistan" %>%
   mutate(wb = countrycode::countrycode(country_name,
                                        origin = "country.name",
                                        destination = "wb"
-  )) -> members
+  ),
+  to_replace = wb %in% names(contact_all)) -> members
 
 ##### Geography #####
 suppressWarnings(
@@ -67,6 +75,35 @@ cm_force_rebuild <- F
 cm_build_verbose <- T
 cm_version <- 2
 source(paste0(cm_path, "/R/covidm.R"))
+
+# replace default contact matrices with new versions
+tmp <- cm_parameters_SEI3R("Thailand")
+ag_labels <- tmp$pop[[1]]$group_names; rm(tmp)
+
+for(i in 1:nrow(members)){
+  if(members$to_replace[i]){
+    cm_matrices[[members$country_name[i]]]$home <-
+      as.matrix(contact_home[[members$wb[i]]]) %>% 
+      set_colnames(ag_labels) %>% 
+      set_rownames(ag_labels)
+    
+    cm_matrices[[members$country_name[i]]]$work <-
+      as.matrix(contact_work[[members$wb[i]]]) %>% 
+      set_colnames(ag_labels) %>% 
+      set_rownames(ag_labels)
+    
+    cm_matrices[[members$country_name[i]]]$school <-
+      as.matrix(contact_school[[members$wb[i]]]) %>% 
+      set_colnames(ag_labels) %>% 
+      set_rownames(ag_labels)
+    
+    cm_matrices[[members$country_name[i]]]$other <-
+      as.matrix(contact_others[[members$wb[i]]]) %>% 
+      set_colnames(ag_labels) %>% 
+      set_rownames(ag_labels)
+  }
+}
+
 
 # fix discrepancies among country names
 names(cm_matrices)[names(cm_matrices) == "TFYR of Macedonia"] <- 
@@ -362,16 +399,10 @@ epi <- data.table(owid) %>%
   .[,loc := countrycode::countrycode(loc, "country.name", "wb")] 
 
 #### model fit ####
-# model_selected <- read_csv("data/gs_fitted_imputed.csv")
-# model_selected <- read_csv("data/gs_fitted_v2_imputed.csv")
-
-load("data/intermediate/out_combined.rdata")
-# out_2 <- read_rds("data/intermediate/out_2.rds")
-model_selected_2 <- read_rds("data/intermediate/DEoptim2_selected.rds") %>% 
-  mutate(date = ymd("2019-12-01") + t)
-# out_3 <- read_rds("data/intermediate/out_3.rds")
-model_selected_3 <- read_rds("data/intermediate/DEoptim3_selected.rds") %>% 
-  mutate(date = ymd("2019-12-01") + t)
+model_selected_2 <- read_rds("data/intermediate/DEoptim2_selected_debug.rds") %>% 
+  filter(!is.na(t))
+model_selected_3 <- read_rds("data/intermediate/DEoptim3_selected_debug.rds") %>% 
+  filter(!is.na(t))
 
 #gs_fitted_v2_imputed
 #### load supporting functions ####
@@ -805,7 +836,6 @@ country_data_length <-
   gm_scaled %>% group_by(wb) %>% group_split() %>% map(nrow) %>% unlist()
 which(country_data_length != 1051)
 
-
 schedule_raw <- gm_scaled %>% 
   mutate(home = 1,
          date = as.character(date)) %>% 
@@ -855,7 +885,8 @@ schedule_raw %<>%
     F),
     school = if_else(holiday, 0, school)) %>% 
   dplyr::select(-holiday) %>% 
-  mutate(status = if_else(is.na(status), "averaged", status))
+  mutate(status = if_else(is.na(status), "averaged", status)) %>% 
+  dplyr::select(date, wb, status, home, work, school, other, month, day, year)
 
 # sanity check
 # schedule_raw %>% 
@@ -966,4 +997,14 @@ res[[3]] %>%
 
 rm(res)
 
-index <- read_rds("data/intermediate/index.rds")
+members_pop <- data.table(name = unique(cm_populations$name)) %>% 
+  mutate(wb = countrycode::countrycode(name, "country.name", "wb"))
+
+cm_populations %>% 
+  left_join(members_pop, by = "name") %>% 
+  filter(wb %in% members$wb,
+         location_type == 4,
+         !wb %in% members_remove) %>% 
+  mutate(tot = m + f) %>% 
+  group_by(name, wb) %>% summarise(tot = sum(tot)) -> members_pop
+

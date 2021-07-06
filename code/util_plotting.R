@@ -41,6 +41,7 @@ theme_map <- function(...) {
     )
 }
 
+policy_labels <- c("V+", "V20", "V60", "V75")
 rollout_labels <- paste0("R",1:4)
 priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
 
@@ -434,7 +435,9 @@ plot_fitted_res <- function(m, var = 1){
 #### sub plots in figure 4 ####
 # file should be the directory to "priority_selecion_2.rds"
 plot_diff <- function(file){
+  
   res <- read_rds(file)
+  
   res[[3]] %>% 
     bind_rows(.id = "ROS") %>% 
     mutate(ROS = paste0("R",ROS),
@@ -445,7 +448,7 @@ plot_diff <- function(file){
                                   # "VSLmlns_pd",
                                   "QALYloss",
                                   "HC"),
-                  w == "Before 2023",
+                  w == "2022",
                   !wb %in% members_remove) %>% 
     pivot_wider(names_from = variable, values_from = value) %>% 
     # left_join(res[[2]] %>% 
@@ -471,15 +474,8 @@ plot_diff <- function(file){
                                   # "VSLmlns_pd",
                                   "QALYloss",
                                   "HC"),
-                  w == "Before 2023",
+                  w == "2022",
                   !wb %in% members_remove)  %>% 
-    # mutate(dir = if_else(variable %in% c("cases", "death_o"),
-    #                      "min",
-    #                      "max"),
-    #        # we flip the sign for dir == "min" because we are looking to maximize
-    #        # all the _pd HE measures, but minimise all the cases and death counts
-    #        value = if_else(wb %in% members_remove, as.numeric(NA), value),
-    #        value = if_else(dir == "min", -1*value, value)) %>% 
     group_by(population, variable, ROS) %>% group_split() %>% 
     map(arrange, value) %>% 
     map(~.[1,]) %>% bind_rows() %>% 
@@ -531,10 +527,11 @@ plot_diff <- function(file){
            p_increase = p_increase*100 %>% round) -> tab_combined
     
   set3 <- list()
+  # index <- read_rds("data/intermediate/index.rds")
   for(i in 1:nrow(index)){
     tab_combined %>% 
       filter(ROS == index$ROS[i],
-             name == as.character(index$variable[i])) %>%
+             name == as.character(index$name[i])) %>%
       mutate(y_LL = p_increase %>% min,
              y_UL = p_increase %>% max,
              padding = 0.3,
@@ -543,28 +540,21 @@ plot_diff <- function(file){
              y_LL = y_LL*(1-padding),
              y_UL = y_UL*(1+padding),
              x_LL = 0.5,
-             x_UL = 5.5) -> p_table
+             x_UL = 5.5,
+             policy = factor(policy,
+                             levels = c("tailored", paste0(1:4)),
+                             labels = c("Local Optimal",
+                                        policy_labels
+                                        ))) -> p_table
       
     ggplot(p_table, aes(x = rk, y = p_increase, #log(abs(value),10), 
                         # fill = policy,
                         fill = policy,
                     group = name)) +
-      scale_fill_manual(values = c(#"black",
-                                    priority_colors,
-                                    "black"),
-                         # breaks = c(0:4, "tailored"),
-                         breaks = c(1:4, "tailored"),
-                         labels = c(#"V0",
-                                    "V+", "V20", "V60", "V75",
-                                    "Local Optimal")) +
-      scale_color_manual(values = c(#"black", 
-        priority_colors, 
-        "black"), 
-        # breaks = c(0:4, "tailored"),
-        breaks = c(1:4, "tailored"),
-        labels = c(#"V0", 
-          "V+", "V20", "V60", "V75",
-          "Local Optimal")) +
+      geom_point(size = 4 ,
+                 pch = 21) +
+      scale_fill_manual(values = c("black",priority_colors)) +
+      scale_color_manual(values = c("black", priority_colors)) +
       scale_x_continuous(breaks = c(1:6), limits = c(0.5, 5.5)) +
       scale_y_continuous(breaks = c(0, 
                                     if_else((round(p_table$y_UL %>% unique/5) - 1) < 1,
@@ -581,9 +571,7 @@ plot_diff <- function(file){
                                             10,
                                             unique(p_table$y_UL)))) +
       #  geom_bar(stat = "identity") +
-      geom_point(size = 4 ,
-                 
-                 pch = 21) +
+
       # geom_line(size = 2) +
       # ggh4x::facet_nested_wrap(ROS~name,scale = "free") +
       labs(#x = "Ranking", 
@@ -620,57 +608,65 @@ plot_decisions <- function(file){
   
   res <- read_rds(file)
 
-  res[[1]] %>% 
+  res[[3]] %>% 
     bind_rows(.id = "ROS") %>% 
     mutate(ROS = paste0("R",ROS),
-           wb = countrycode(population, "country.name", "wb")) %>% 
-    dplyr::filter(variable %in% c("cases", "death_o",
-                                  "adjLE_pd", 
-                                  # "VSLmlns_pd",
-                                  "QALYloss_pd",
-                                  "HC_pd"),
-                  w == "Before 2023") %>% 
-    mutate(dir = if_else(variable %in% c("cases", "death_o"),
-                         "min",
-                         "max"),
-           # we flip the sign for dir == "min" because we are looking to maximize
-           # all the _pd HE measures, but minimise all the cases and death counts
-           value = if_else(dir == "min", -1*value, value),
-           value = if_else(wb %in% members_remove, as.numeric(NA), value)) %>% 
-    group_by(population, variable, ROS) %>% group_split() %>% 
-    map(arrange, desc(value)) %>% 
-    map(~.[1,]) %>% bind_rows() %>% 
-    mutate(policy = paste0("P",policy)) %>% 
-    group_by(ROS, variable) %>% group_split() %>% 
+           wb = countrycode(population, "country.name", "wb"),
+           policy = if_else(wb %in% members_remove, 
+                            as.character(NA), policy)) %>% 
+    dplyr::filter(
+      # variable %in% c("cases", "death_o",
+      #                 "adjLE_pd", 
+      #                 # "VSLmlns_pd",
+      #                 "QALYloss_pd",
+      #                 "HC_pd"),
+    w == "2022",
+    policy != 0
+    ) %>% 
+    dplyr::select(ROS, policy, population, w, cases, death_o,
+                  adjLE, QALYloss, HC) %>% 
+    pivot_longer(cols = c(cases, death_o, adjLE, QALYloss, HC)) %>% 
+    # mutate(dir = if_else(variable %in% c("cases", "death_o"),
+    #                      "min",
+    #                      "max"),
+    #        # we flip the sign for dir == "min" because we are looking to maximize
+    #        # all the _pd HE measures, but minimise all the cases and death counts
+    #        value = if_else(dir == "min", -1*value, value),
+    #        value = if_else(wb %in% members_remove, as.numeric(NA), value)) %>% 
+    group_by(population, name, ROS) %>% group_split() %>% 
+    map(mutate, rk = rank(value)) %>% 
+    map(arrange, desc(value)) %>% bind_rows() %>% 
+    filter(rk == 1) %>% mutate(wb = countrycode(population, "country.name", "wb")) %>% 
+    group_by(ROS, name) %>% group_split() %>% 
     map(full_join, members_world, by = "wb") %>% 
     map(st_as_sf) %>% 
     map(arrange, ROS) %>% 
     map(mutate, ROS = zoo::na.locf(ROS)) %>%
-    map(mutate, variable = zoo::na.locf(variable)) %>% 
+    map(mutate, name = zoo::na.locf(name)) %>% 
     bind_rows() %>% 
-    mutate(variable = factor(variable,
-                             levels = c("death_o", "cases", 
-                                        "adjLE_pd",
-                                        # "VSLmlns_pd",
-                                        "QALYloss_pd",
-                                        "HC_pd"),
-                             labels = c("Deaths","Cases", 
-                                        "Adj. Life Expenctancy",
-                                        # "Value of Statistical Life",
-                                        "Quality Adj. Life Years",
-                                        "Human Capital"
-                             )),
+    mutate(name = factor(name,
+                         levels = c("death_o", "cases", 
+                                    "adjLE",
+                                    # "VSLmlns_pd",
+                                    "QALYloss",
+                                    "HC"),
+                         labels = c("Deaths","Cases", 
+                                    "Adj. Life Expenctancy",
+                                    # "Value of Statistical Life",
+                                    "Quality Adj. Life Years",
+                                    "Human Capital"
+                         )),
            ROS = factor(ROS,
                         levels = paste0("R",c(1,2,3,4)),
                         labels = rollout_labels),
-           policy = factor(policy, levels = paste0("P",1:4))) %>% 
+           policy = factor(policy)) %>% 
     st_as_sf() -> tab1
   
   tab1 %>% 
     data.table %>% 
     filter(!is.na(policy),
            !wb %in% members_remove) %>% 
-    dplyr::select(ROS, wb, population, variable, policy) %>% 
+    dplyr::select(ROS, wb, population, name, policy) %>% 
     left_join(cm_populations %>% 
                 filter(name %in% members$country_name) %>% 
                 # pull(name) %>% unique %>% length
@@ -678,20 +674,44 @@ plot_decisions <- function(file){
                 summarise(pop = sum(f + m)) %>% 
                 mutate(wb = countrycode(name, "country.name", "wb")),
               by = c("wb", "population" = "name")) %>% 
-    group_by(ROS, policy, variable ) %>% 
+    group_by(ROS, policy, name) %>% 
     summarise(pop = sum(pop)) -> tab2
   
-  index <- tab2 %>% group_by(variable, ROS)  %>% tally()
+  index <- read_rds("data/intermediate/index.rds")
+  # index <- tab2 %>% group_by(name, ROS) %>% tally()
   set3 <- plot_diff(file)
   set1 <- list()
+  no_outbreak <- as.logical(0 %in% tab1$policy %>% unique %>% as.character())
+  
   for(i in 1:nrow(index)){
+  
+    
+    if(no_outbreak == T){
+      colors_tmp <- c("black", priority_colors,"grey")
+      labels_tmp <- c("No Vac", "V+", "V20", "V60", "V75", 
+                      "Outside of WHO/Europe")
+      breaks_tmp <- c(0:4, NA)
+    }
+    
+    if(no_outbreak == F){
+      colors_tmp <- c(priority_colors, "grey")
+      labels_tmp <- c("V+", "V20", "V60", "V75", 
+                      "Outside of WHO/Europe")
+      breaks_tmp <- c(1:4, NA)
+    }
+
     tab1 %>% 
-      filter(variable == index$variable[i],
-             ROS == index$ROS[i]) %>% 
+      filter(name == index$name[i],
+             ROS == index$ROS[i],
+             !wb %in% members_remove) %>% 
       ggplot(., aes(fill = policy)) +
       geom_sf(color = "black") +
+      scale_fill_manual(values = colors_tmp, 
+                        na.value = "grey",
+                        breaks = breaks_tmp,
+                        labels = labels_tmp) +
       geom_sf_pattern(data =  tab1 %>% 
-                        filter(variable == index$variable[i],
+                        filter(name == index$name[i],
                                ROS == index$ROS[i],
                                wb %in% members_remove),
                       pattern_spacing = 0.03,
@@ -712,10 +732,6 @@ plot_decisions <- function(file){
                expand = F) +
       theme_nothing() +
       labs(fill = "Prioritisation Strategies: ") +
-      scale_fill_manual(values = priority_colors, 
-                        na.value = "grey",
-                        breaks = c(paste0("P",1:4), NA),
-                        labels = c(c("V+", "V20", "V60", "V75"), "Outside of WHO/Europe")) +
       theme(legend.position = "none",
             plot.margin = unit(c(0, 0, 0, 0), "cm")) -> set1[[i]]
     
@@ -729,15 +745,15 @@ plot_decisions <- function(file){
   set2 <- list()
   for(i in 1:nrow(index)){
     tab2 %>% 
-      filter(variable == index$variable[i],
+      filter(name == index$name[i],
              ROS == index$ROS[i]) %>% 
       ggplot(., aes(x = ROS, y = pop, color = policy, fill = policy)) +
       geom_bar(stat = "identity") +
-      scale_color_manual(breaks = c(paste0("P",1:4), NA),
+      scale_color_manual(breaks = c(1:4, NA),
                          values = priority_colors,
                          na.value = "grey",
                          labels = c(paste0("P",1:4), "Outside of WHO/Europe")) +
-      scale_fill_manual(breaks = c(paste0("P",1:4), NA),
+      scale_fill_manual(breaks = c(1:4, NA),
                         values = priority_colors,
                         na.value = "grey",
                         labels = c(paste0("P",1:4), "Outside of WHO/Europe")) +
@@ -753,6 +769,7 @@ plot_decisions <- function(file){
                  "Adj. Life Expectancy",
                  "Quality Adj. Life Years", 
                  "Human Capital")
+  
   for(i in 1:10){
     if((i%%2) != 0) {
       top_titles[[i]] <- ggdraw() + 

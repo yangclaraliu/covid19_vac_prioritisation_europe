@@ -145,7 +145,7 @@ tab_combined %>%
 
 
 #### supplemental tables
-res <- read_rds("data/intermediate/priority_selection_2.rds")
+res <- read_rds("data/intermediate/priority_selection_2_debug.rds")
 
 res[[3]] %>% 
   bind_rows(.id = "ROS") %>% 
@@ -157,7 +157,7 @@ res[[3]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss",
                                 "HC"),
-                w == "Before 2023",
+                w == "2022",
                 !wb %in% members_remove) %>% 
   pivot_wider(names_from = variable, values_from = value) %>% 
   # left_join(res[[2]] %>% 
@@ -183,7 +183,7 @@ res[[3]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss",
                                 "HC"),
-                w == "Before 2023",
+                w == "2022",
                 !wb %in% members_remove)  %>% 
   # mutate(dir = if_else(variable %in% c("cases", "death_o"),
   #                      "min",
@@ -242,11 +242,11 @@ tab_regional %>%
            round(., 2),
          p_increase = p_increase*100 %>% round) -> tab_combined
 
-tab_combined %>% filter(policy %in% c(1:4),
-                        ROS %in% c("Medium")) %>% 
+tab_combined %>% filter(policy %in% c(1:4)) %>% 
 dplyr::select(-best_perform, -rk, -value) %>% 
   pivot_wider(names_from = policy,
-              values_from = p_increase) #%>% 
+              values_from = p_increase) #%>%
+  mutate(tot = `1` + `2` + `3` + `4`)
   # mutate(diff = abs(`3`-`4`))
 
 ##### examine the proportion under influence ####
@@ -259,7 +259,7 @@ res[[1]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss_pd",
                                 "HC_pd"),
-                w == "Before 2023") %>% 
+                w == "2022") %>% 
   mutate(dir = if_else(variable %in% c("cases", "death_o"),
                        "min",
                        "max"),
@@ -285,7 +285,7 @@ res[[1]] %>%
                                       "QALYloss_pd",
                                       "HC_pd"),
                            labels = c("Deaths","Cases", 
-                                      "Adj. Life Expenctancy",
+                                      "Adj. Life Expectancy",
                                       # "Value of Statistical Life",
                                       "Quality Adj. Life Years",
                                       "Human Capital"
@@ -308,7 +308,7 @@ tab1 %>%
               summarise(pop = sum(f + m)) %>% 
               mutate(wb = countrycode(name, "country.name", "wb")),
             by = c("wb", "population" = "name")) %>% 
-  group_by(ROS, policy, variable ) %>% 
+  group_by(ROS, policy, variable) %>% 
   summarise(pop = sum(pop),
             n = n()) -> tab2
 
@@ -316,11 +316,15 @@ tab2 %>%
   mutate(pop_tot = 848407,
          n_tot = 38,
          r_pop = pop/pop_tot,
+         variable = factor(variable,
+                           levels = c("Deaths", "Cases", "Adj. Life Expectancy",
+                                      "Quality Adj. Life Years", "Human Capital")),
          r_n = n/n_tot) %>%
   dplyr::select(-pop, -n, -pop_tot, -n_tot, -r_n) %>% 
   pivot_wider(names_from = policy,
               values_from = r_pop)%>% 
-  replace(., is.na(.), 0) -> tmp 
+  replace(., is.na(.), 0) %>% 
+  arrange(ROS, variable)-> tmp 
 
 write_csv(tmp, "data/intermediate/r_pop.csv")
 # %>% 
@@ -336,12 +340,16 @@ write_csv(tmp, "data/intermediate/r_pop.csv")
 tab2 %>% 
   mutate(pop_tot = 848407,
          n_tot = 38,
+         variable = factor(variable,
+                           levels = c("Deaths", "Cases", "Adj. Life Expectancy",
+                                      "Quality Adj. Life Years", "Human Capital")),
          r_pop = pop/pop_tot,
          r_n = n/n_tot) %>%
   dplyr::select(-pop, -n, -pop_tot, -n_tot, -r_pop) %>% 
   pivot_wider(names_from = policy,
               values_from = r_n) %>% 
-  replace(., is.na(.), 0) -> tmp 
+  replace(., is.na(.), 0) %>% 
+  arrange(ROS, variable) -> tmp 
   
 write_csv(tmp, "data/intermediate/r_n.csv")
 
@@ -417,6 +425,19 @@ tmp %>%
                                     "Adj. Life Expectancy",
                                     "Quality Adj. Life Years",
                                     "Human Capital"
+                         ))) %>% 
+  filter(p1 > 0 | p2 > 0) %>% 
+  arrange(desc(p1)) %>% View()
+
+
+tmp %>% 
+  bind_rows(.id = "metric") %>% 
+  mutate(metric = factor(metric,
+                         levels = 1:5,
+                         labels = c("Deaths","Cases", 
+                                    "Adj. Life Expectancy",
+                                    "Quality Adj. Life Years",
+                                    "Human Capital"
                          ))) %>%
   dplyr::select(-a, -b) %>% 
   pivot_longer(cols = c(p1, p2)) %>% 
@@ -451,7 +472,7 @@ tmp %>%
   group_by(population) %>% tally
 
 # AZE can be an example
-i = 44
+i = 3
 m <- model_selected_2
 
 lapply(1:4, function(j){
@@ -499,8 +520,19 @@ lapply(after, "[[", "dyna") %>%
 bind_rows(seg1, seg2) %>% 
   filter(ROS %in% c("R3","R4"),
          !policy %in% c("p1", "p2")) %>% 
-  mutate(date = t + ymd("2019-12-01") + m$t[i])
+  mutate(date = t + ymd("2019-12-01") + m$t[i])  -> tmp
 
+tmp %>% 
+  filter(compartment == "death_o") %>% 
+  separate(group, into = c("LL","UL"), sep = "-") %>% 
+  separate(policy, into = c("policy", "variation"), sep = "_") %>% 
+  # filter(date > "2021-06-30") %>% 
+  mutate(LL = parse_number(LL)) %>% 
+  ggplot(aes(x = date, y = value, group = variation, color = variation)) +
+  geom_line() +
+  facet_grid(ROS + policy ~ LL) +
+  geom_vline(xintercept = ymd("2022-02-21")) +
+  geom_vline(xintercept = ymd("2021-02-21"))
 
 
 before[[4]]$main %>% 
@@ -527,11 +559,53 @@ bind_rows(w, wo) %>%
   distinct() %>% 
   filter(w == "Before 2023",
          population == "Sweden") %>% 
-  dplyr::select(ROS, policy, death_o) %>% 
+  dplyr::select(ROS, policy, cases) %>% 
   mutate(policy = case_when(policy == 3 ~ "p3",
                             policy == 4 ~ "p4",
                             TRUE ~ policy)) %>% 
-  pivot_wider(names_from = policy, values_from = death_o) %>% 
+  pivot_wider(names_from = policy, values_from = cases) %>% 
   dplyr::select(c("ROS", "0", "p3","p3_a","p3_b","p4","p4_a","p4_b"))
 
+model_selected_2 %>% 
+  filter(!wb %in% members_remove) %>% 
+  pull(r) %>% quantile(., c(0.25, 0.5, 0.75))
+
+read_rds("data/intermediate/econ_by_VE_2_debug.rds") -> tmp
+
+
+#### Figure S14 further exploration ####
+res <- read_rds("data/intermediate/priority_selection_2_debug.rds") %>%
+  .[[3]] %>%
+  bind_rows(.id = "ROS") %>%
+  mutate(ROS = paste0("R",ROS))  %>%
+  mutate(wb = countrycode(population, "country.name", "wb")) %>%
+  dplyr::select(colnames(res1)) %>%
+  filter(!wb %in% members_remove)
+
+read_rds("data/intermediate/priority_selection_2_debug.rds") %>%
+  .[[2]] %>% 
+  map(bind_rows) %>% 
+  bind_rows(.id = "ROS") %>%
+  mutate(ROS = paste0("R",ROS))  %>%
+  mutate(wb = countrycode(population, "country.name", "wb")) -> main
+
+data.table(start = c(rep("2021-03-01", 2),
+                     rep("2021-01-01", 2)),
+           policy = paste0("p",1:4)) %>% 
+  mutate(start = ymd(start),
+         marker1 = start %m+% months(6),
+         marker2 = start %m+% months(12),
+         marker3 = start %m+% months(18),
+         marker4 = ymd("2022-12-31")) -> marker
+
+main %>% 
+  left_join(marker, by = "policy") %>% 
+  ggplot(., aes(x = date, y = death_o, group = population)) +
+  geom_line() +
+  facet_wrap(ROS~policy) +
+  geom_vline(data = marker, aes(xintercept = start)) +
+  geom_vline(data = marker, aes(xintercept = marker1), color = "red") +
+  geom_vline(data = marker, aes(xintercept = marker2), color = "orange") +
+  geom_vline(data = marker, aes(xintercept = marker3), color = "yellow") +
+  geom_vline(data = marker, aes(xintercept = marker4), color = "green") 
 

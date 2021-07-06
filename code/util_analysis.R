@@ -1,15 +1,17 @@
 gen_country_basics <- function(country,
-                               waning_nat = 45*7,
+                               waning_nat = 52*7*3,
                                R0_assumed  = 2.7,
                                date_start = "2020-01-01",
                                date_end = "2022-12-31",
+                               mobility = schedule_raw,
                                # s_A = 0.1,
                                deterministic = TRUE){
   
   require(countrycode)
   
   wb_tmp = countrycode(country, "country.name", "wb")
-  c_tmp = schedule_raw %>% 
+  
+  c_tmp = mobility %>% 
     filter(wb == wb_tmp,
            date >= lubridate::ymd(date_start),
            date <= lubridate::ymd(date_end))
@@ -36,7 +38,7 @@ gen_country_basics <- function(country,
   for(i in 1:length(para$pop)){
     
     para$pop[[i]]$y <- cf
-    para$pop[[i]]$u <- sus
+    para$pop[[i]]$u <- sus/mean(sus)
     
     # scale u (susceptibility) to achieve desired R0
     current_R0 = cm_calc_R0(para, i); # calculate R0 in population i of params
@@ -49,10 +51,10 @@ gen_country_basics <- function(country,
     # infections start in individuals aged 20-50
     para$pop[[i]]$dist_seed_ages = 
       cm_age_coefficients(20, 
-                          50, 
+                          80, 
                           5 * (0:length(para$pop[[i]]$size))) 
     
-    # 1 new infections each day for 14 days to see the outbreak
+    # 1 new infections each day for 14 days to seed the outbreak
     para$pop[[i]]$seed_times <- c(1:14)
   }
   
@@ -111,14 +113,14 @@ vac_policy <- function(para,
                                     2,  2,  2,  2,
                                     1,  1,  1,  1),
                        # age-specific maximum vaccination uptake
-                       cov_max = c(rep(0,2),
-                                   rep(0.7, 10),
+                       cov_max = c(rep(0,4),
+                                   rep(0.7, 8),
                                    rep(0.9, 4))
                        
                        
 ){
   date_start = para$date0
-
+  
   # details of the vaccine roll-out schedules
   # beginning of each phase, and the daily number of doses available
   tmp_schedule <- data.frame(milestone_date = c(para$date0, 
@@ -134,6 +136,7 @@ vac_policy <- function(para,
     ungroup %>% 
     mutate(milestone_date = lubridate::ymd(milestone_date),
            t = milestone_date - as.Date(para$date0),
+           t = ceiling(t),
            cov = c(NA, diff(zoo::na.locf(milestone_cov, 
                                          na.rm = F))),
            cov = if_else(cov %in% c(0, NA, NaN), 
@@ -187,7 +190,15 @@ vac_policy <- function(para,
         mutate(date = if_else(date == date_start, date + 1, date)),
       by = "date") %>% 
     mutate(supply = imputeTS::na_locf(supply),
-           supply_cum = cumsum(supply), phase = 0) -> daily_vac
+           supply = if_else(date > tail(milestone_date,1),
+                            0,
+                            supply),
+           supply = if_else(date < head(milestone_date,1),
+                            0,
+                            supply),
+           supply_cum = cumsum(supply), 
+           phase = 0) -> daily_vac
+  
   
   date_marker <- sapply(1:length(pop_marker), 
                         function(i) {min(which(daily_vac$supply_cum >= 
@@ -241,8 +252,7 @@ vac_policy <- function(para,
     }
     
     if(date_marker[i] < nrow(daily_vac)){
-      remainder <- sum(pop_cap[[i]]) - daily_vac[,tmp_ag] %>% 
-        colSums(., na.rm = T) %>% sum
+      remainder <- sum(pop_cap[[i]]) - sum(colSums(daily_vac[,tmp_ag]))
       supply <- daily_vac[date_marker[i+1],"supply"]
       daily_vac[date_marker[i+1], tmp_ag] <- as.list(remainder*group_prop_ag)
       
@@ -252,8 +262,8 @@ vac_policy <- function(para,
         
       }
     }
-  
-    }
+    
+  }
   
   # Highlight the exception
   # If the vaccine supply has yet to saturated the population, we will replace 
@@ -323,8 +333,9 @@ predict_outbreak <- function(
   ve_i = NULL, # VE against infections
   ve_d = NULL, # VE against disease
   reporting = 1,
+  mobility = schedule_raw,
   # eff = NULL,#c(rep(0.9,10),rep(0.8,6)),
-  wane = c(52*3, 1), # natural waning; vaccine waning
+  wane = c(52*3, 52), # natural waning; vaccine waning
   prp = priority_policy,
   R = NULL) {
   
@@ -336,17 +347,19 @@ predict_outbreak <- function(
     R0_assumed = R,
     date_start = date_start,
     date_end = date_end,
+    mobility = mobility,
     deterministic = TRUE
   ) %>%
     update_vac_char(
       para = .,
-      waning_vac = wane[2] * 365,
+      waning_vac = wane[2] * 7,
       ve_i = ve_i,
       ve_d = ve_d
     ) -> params_baseline
   
   params_baseline$processes[[2]]$prob[1,] <- 
     params_baseline$processes[[2]]$prob[1,] * reporting
+  
   
   prp %>%
     map(~ vac_policy(
@@ -406,7 +419,7 @@ predict_outbreak <- function(
     mutate(QALYcases = cases * 0.0307,
            HC = LEdisc * GDPpc) %>%
     # filter(date >= date_start_vac$date_start_vac) %>% 
-    filter(date >= "2021-01-01") %>% 
+    # filter(date >= "2021-01-01") %>% 
     group_by(policy, run, population, wb, t, date) %>% 
     summarise_at(vars(c("cases", "death_o",
                         "LE", "adjLE", "QALE", "adjQALE",

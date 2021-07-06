@@ -306,8 +306,8 @@ plot_grid(p1_2, NULL, p4_2, ncol = 3, rel_widths = c(1, 0.1,4), align = "h",
 plot_grid(p1_3, NULL, p4_3, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_3
 
-ggsave("figs/Fig3_2.png",fig3_2, width = 25, height = 15)
-ggsave("figs/Fig3_3.png",fig3_3, width = 25, height = 15)
+ggsave("figs/Fig3_2_debug.png",fig3_2, width = 25, height = 15)
+ggsave("figs/Fig3_3_debug.png",fig3_3, width = 25, height = 15)
 
 p_t_2 <- plot_fitted_res(model_selected_2)
 p_t_3 <- plot_fitted_res(model_selected_3)
@@ -324,45 +324,58 @@ ggsave("figs/supplemental/p_r_3.png",p_r_3, width = 25, height = 15)
 ggsave("figs/supplemental/p_rho_3.png",p_rho_3, width = 25, height = 15)
 
 #### Figure 4: vaccination strategy selected by decision criteria ####
-decisions_2 <- plot_decisions("data/intermediate/priority_selection_2.rds")
-ggsave(filename = "figs/Fig4_2.png", decisions_2, width = 24, height = 13.5, dpi = 500)
+decisions_2 <- plot_decisions("data/intermediate/priority_selection_2_debug.rds")
+ggsave(filename = "figs/Fig4_2_debug.png", decisions_2, width = 24, 
+       height = 13.5, dpi = 500)
 
-decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w.rds")
-ggsave(filename = "figs/Fig4_2_w.png", decisions_2_w, width = 24, height = 13.5)
+decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds")
+ggsave(filename = "figs/Fig4_2_w_debug.png", decisions_2_w, width = 24,
+       height = 13.5)
 
-decisions_3 <- plot_decisions("data/intermediate/priority_selection_3.rds")
-ggsave(filename = "figs/Fig4_3.png", decisions_3, width = 24, height = 13.5)
+decisions_3 <- plot_decisions("data/intermediate/priority_selection_3_debug.rds")
+ggsave(filename = "figs/Fig4_3_debug.png", decisions_3, width = 24, 
+       height = 13.5)
 
-decisions_3_w <- plot_decisions("data/intermediate/priority_selection_3_w.rds")
-ggsave(filename = "figs/Fig4_3_w.png", decisions_3_w, width = 24, height = 13.5)
+decisions_3_w <- plot_decisions("data/intermediate/priority_selection_3_w_debug.rds")
+ggsave(filename = "figs/Fig4_3_w_debug.png", decisions_3_w, width = 24, height = 13.5)
 #ggsave(filename = "figs/Fig4_2.png", p, width = 24, height = 13.5)
 
 #### figure 5: decision by VE ####
 ##### panel 1: SA by VE by country####
 require(ggh4x)
-file_sero <- "data/intermediate/non_S_2.rds"
-file_VE <- "data/intermediate/econ_by_VE_2.rds"
-file_select <- "data/intermediate/priority_selection_2.rds"
+file_sero <- "data/intermediate/non_S_2_debug.rds"
+file_VE <- "data/intermediate/econ_by_VE_2_debug.rds"
+# file_select <- "data/intermediate/priority_selection_2_debug.rds"
 
 tmp_sero <- read_rds(file_sero)
-tmp_ve <- read_rds(file_VE)
-tmp_select <- read_rds(file_select)
+tmp_ve <- read_rds(file_VE) %>% 
+  dplyr::select(ROS, policy, population, w, ve_set, 
+                "cases", "death_o", "adjLE",
+                "QALYloss", "HC") %>% 
+  filter(w == 2022) %>% 
+  pivot_longer(cols = c("cases", "death_o", "adjLE",
+                        "QALYloss", "HC"),
+               names_to = "variable")
 
-tmp <- tmp_ve %>% 
-  dplyr::filter(w == "Before 2023",
-                variable %in% c("cases", "death_o", "adjLE_pd",
-                                "QALYloss_pd", "HC_pd")) %>% 
+tmp_ve %>% filter(ROS == "R4", population == "Albania",
+                  ve_set == 3) %>% 
   left_join(ve_tab %>% rownames_to_column(var = "ve_set"),
-            by = "ve_set")  %>% 
+            by = "ve_set") %>% 
+  group_by(variable) %>% group_split()
+
+
+
+
+tmp <- tmp_ve %>%
+left_join(ve_tab %>% rownames_to_column(var = "ve_set"),
+            by = "ve_set") %>% 
+
   left_join(tmp_sero, by = "population") %>% 
-  mutate(dir = if_else(variable %in% c("cases", "death_o"),
-                       "min", "max"),
-         value = if_else(dir == "min", -1*value, value)) %>% 
-  group_by(ve_set, run, population, w, variable, ROS) %>% group_split() %>% 
-  map(arrange, desc(value)) %>% 
-  map(~.[1,]) %>% bind_rows() %>% 
-  arrange(p) %>% 
-  filter(!wb %in% members_remove)
+  filter(policy != 0) %>% 
+  group_by(ve_set, population, w, variable, ROS)  %>% group_split() %>% 
+  map(mutate, rk = rank(value)) %>% bind_rows() %>% 
+  filter(!wb %in% members_remove,
+         rk == 1)
 
 tmp %>% 
   mutate(profile = case_when(ve ==0.95 & ei_v == 0.95 ~ 1,
@@ -375,9 +388,9 @@ tmp %>%
                       labels = rollout_labels),
          variable = factor(variable,
                            levels = c("death_o", "cases", 
-                                      "adjLE_pd",
-                                      "QALYloss_pd",
-                                      "HC_pd"),
+                                      "adjLE",
+                                      "QALYloss",
+                                      "HC"),
                            labels = c("Deaths","Cases", 
                                       "Adj. Life Expectancy",
                                       "Quality Adj. Life Years",
@@ -391,7 +404,20 @@ tmp %>%
                        arrange(tot) %>% pull(loc))) %>%  
   filter(!is.na(profile),
          !wb %in% members_remove,
-         ROS %in% rollout_labels[c(1, 4)]) -> tmp_fp
+         ROS %in% rollout_labels[c(1:4)]) -> tmp_fp
+
+tmp_fp %>% 
+  mutate(policy = factor(policy, levels = 1:4)) %>% 
+  group_by(ROS, variable, policy, profile) %>% 
+  tally %>% pivot_wider(names_from = variable, values_from = n)  %>% 
+  group_by(ROS) %>% group_split() %>% .[[3]] %>% group_by(policy) %>% 
+  pivot_longer(cols = c("Deaths","Cases", 
+                        "Adj. Life Expectancy",
+                        "Quality Adj. Life Years",
+                        "Human Capital")) %>% 
+  ggplot(., aes(x = profile, y = value, group = name, color = name)) +
+  geom_line() +
+  facet_wrap(ROS ~ policy)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
@@ -428,8 +454,8 @@ ggplot(tmp_fp, aes(y = wb,
   geom_tile() +
   facet_nested(ROS ~ variable , scales = "free") +
   scale_y_discrete(guide = guide_axis(n.dodge = 2)) +
-  scale_fill_manual(values = c("grey",priority_colors), labels = c("V0", "V+", "V20", "V60", "V75")) +
-  scale_color_manual(values = c("grey", priority_colors), labels = c("V0", "V+", "V20", "V60", "V75")) +
+  scale_fill_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
+  scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
   labs(x = "Vaccine Profile", y = "", fill = "", color = "") +
   theme_cowplot() +
   theme(strip.background = element_rect(fill = NA),
@@ -446,5 +472,6 @@ ggplot(tmp_fp, aes(y = wb,
         # strip.text = element_text(size = 16)
         ) -> p
 
-ggsave("figs/fig5_extended.png", p, width = 18,height = 24, dpi = 500)
+ggsave("figs/fig5_test_debug.png", p, width = 15,height = 20, dpi = 500)
 
+tmp_ve
