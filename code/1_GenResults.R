@@ -52,7 +52,7 @@ gen_priority <- function(m,
 }
 
 # baseline model
-priority_selection_2 <- gen_priority(m = model_selected_2,
+priority_selection_2 <- gen_priority(m = model_selected_2[1,],
                                      prp = priority_policy)
 write_rds(priority_selection_2, 
           "data/intermediate/priority_selection_2_debug.rds")

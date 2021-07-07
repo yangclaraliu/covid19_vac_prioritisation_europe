@@ -44,6 +44,11 @@ theme_map <- function(...) {
 policy_labels <- c("V+", "V20", "V60", "V75")
 rollout_labels <- paste0("R",1:4)
 priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
+metric_labels <- c("Deaths", "Cases", 
+                   "Adj. Life Expectancy (cLY) Loss",
+                   "Quality Adj. Life Years (cQALY) Loss",
+                   "Human Capital (HC) Loss")
+
 
 plot_fit <- function(cn_tmp, n, t_intro, R0){
   # debug
@@ -622,7 +627,7 @@ plot_decisions <- function(file){
       #                 "HC_pd"),
     w == "2022",
     policy != 0
-    ) %>% 
+    ) #%>% 
     dplyr::select(ROS, policy, population, w, cases, death_o,
                   adjLE, QALYloss, HC) %>% 
     pivot_longer(cols = c(cases, death_o, adjLE, QALYloss, HC)) %>% 
@@ -650,15 +655,9 @@ plot_decisions <- function(file){
                                     # "VSLmlns_pd",
                                     "QALYloss",
                                     "HC"),
-                         labels = c("Deaths","Cases", 
-                                    "Adj. Life Expenctancy",
-                                    # "Value of Statistical Life",
-                                    "Quality Adj. Life Years",
-                                    "Human Capital"
-                         )),
+                         labels = metric_labels),
            ROS = factor(ROS,
-                        levels = paste0("R",c(1,2,3,4)),
-                        labels = rollout_labels),
+                        levels = rollout_labels),
            policy = factor(policy)) %>% 
     st_as_sf() -> tab1
   

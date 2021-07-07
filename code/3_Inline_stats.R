@@ -33,14 +33,20 @@ owid_vac %>%
   map(arrange, desc(date)) %>% 
   map(~.[1,]) %>% bind_rows() %>% 
   pivot_longer(col = starts_with("R")) %>% 
-  mutate(sign = p >= value, name = parse_number(name)) %>% 
+  mutate(sign = p > value, name = parse_number(name)) %>% 
   filter(sign == T) %>% 
   group_by(wb) %>% group_split() %>% 
   map(arrange, desc(name)) %>% 
   map(~.[1,]) %>% 
   bind_rows() %>% 
-  filter(name == 4) %>% 
-  arrange(p)
+  arrange(p) -> tmp
+
+tmp$name %>% table
+
+
+tmp %>% pivot_wider(names_from = name,
+                    values_from = sign)
+
 
 ####
 res <- read_rds("data/intermediate/priority_selection_2.rds")
