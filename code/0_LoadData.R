@@ -971,9 +971,9 @@ tmp %>% bind_rows(.id = "country_index") %>%
 
 rm(tmp)
 
-covar[["non_S"]] <- readRDS("data/intermediate/non_S_2.rds")
+covar[["non_S"]] <- readRDS("data/intermediate/non_S_2_debug.rds")
 
-res <- readRDS("data/intermediate/priority_selection_2.rds")
+res <- readRDS("data/intermediate/priority_selection_2_debug.rds")
 
 res[[3]] %>% 
   bind_rows(.id = "ROS") %>% 
@@ -985,7 +985,7 @@ res[[3]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss",
                                 "HC"),
-                w == "Before 2023",
+                w == "2022",
                 !wb %in% members_remove)  %>% 
   group_by(population, variable, ROS) %>% group_split() %>% 
   map(arrange, value) %>% 

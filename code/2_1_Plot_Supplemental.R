@@ -85,7 +85,7 @@ fitted_country[which(!fitted_country %in% gm_country)]
 #### 1.1 population pyramid ####
 cm_populations %>% 
   data.table() %>% 
-  separate(age, into = c("LL", "UL"), sep = "-") #%>% 
+  separate(age, into = c("LL", "UL"), sep = "-") %>% 
   filter(location_type == 4) %>% 
   mutate(LL = parse_number(LL),
          LL = if_else(LL > 75, 75, LL),
@@ -99,6 +99,8 @@ cm_populations %>%
          wb = countrycode(name, "country.name", "wb")) %>% 
   filter(wb %in% members$wb) -> all_pop
 
+wb_index <- sort(unique(all_pop$wb))
+
 
 all_pop  %>% 
   mutate(age = factor(age,
@@ -109,7 +111,7 @@ all_pop  %>%
                values_to = "pop") %>% 
   mutate(pop = if_else(gender == "m", -pop, pop),
          gender = factor(gender, levels = c("m", "f"))) %>% 
-  filter(wb %in% members$wb[27:53]) %>% 
+  filter(wb %in% wb_index[37:53]) %>% 
   ggplot(., aes(x = age, y = pop, fill = gender)) +
   geom_bar(stat = "identity", color = "black") +
   coord_flip() +
@@ -128,7 +130,7 @@ all_pop  %>%
         plot.title = element_text(size = 24),
         axis.title = element_text(size = 20)) -> p1
 
-ggsave("figs/figSX_pyramid_2.pdf", p1, width = 20, height = 20)
+ggsave("figs/supplemental/pyramid_4.png", p1, width = 20, height = 20)
 
 #### CLM ####
 ##### Panel 2: Illustration on Vaccine Characteristics #####
@@ -313,11 +315,7 @@ res[[3]] %>% bind_rows(.id = "ROS") %>% mutate(ROS = paste0("R",ROS)) %>%
                                       "adjLE",
                                       "QALYloss",
                                       "HC"),
-                           labels = c("Deaths","Cases", 
-                                      "Adj. Life Expectancy",
-                                      "Quality Adj. Life Years",
-                                      "Human Capital"
-                           )),
+                           labels = metric_labels),
          policy = factor(policy,
                          levels = paste0(1:4),
                          labels = c("V+", "V20", "V60","V75")),
@@ -337,9 +335,6 @@ tab2 %>%
   ungroup %>% 
   group_by(ROS, w, variable, policy) %>% 
   summarise(tot = sum(tot)) -> tab2
-
-
-
 
 tab2 %>% 
   ggplot(., aes(x = w,

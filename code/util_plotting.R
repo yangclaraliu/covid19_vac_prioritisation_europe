@@ -45,9 +45,9 @@ policy_labels <- c("V+", "V20", "V60", "V75")
 rollout_labels <- paste0("R",1:4)
 priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
 metric_labels <- c("Deaths", "Cases", 
-                   "Adj. Life Expectancy (cLY) Loss",
-                   "Quality Adj. Life Years (cQALY) Loss",
-                   "Human Capital (HC) Loss")
+                   "Adj. Life Expectancy\n(cLY) Loss",
+                   "Quality Adj. Life Years\n(cQALY) Loss",
+                   "Human Capital\n(HC) Loss")
 
 
 plot_fit <- function(cn_tmp, n, t_intro, R0){
@@ -442,6 +442,11 @@ plot_fitted_res <- function(m, var = 1){
 plot_diff <- function(file){
   
   res <- read_rds(file)
+  index <- read_rds("data/intermediate/index.rds")
+  index <- index %>% 
+    mutate(name = factor(name,
+                         levels = as.character(unique(index$name)),
+                         labels = metric_labels))
   
   res[[3]] %>% 
     bind_rows(.id = "ROS") %>% 
@@ -517,11 +522,7 @@ plot_diff <- function(file){
                                     "adjLE",
                                     "QALYloss",
                                     "HC"),
-                         labels = c("Deaths","Cases", 
-                                    "Adj. Life Expenctancy",
-                                    "Quality Adj. Life Years",
-                                    "Human Capital"
-                         )),
+                         labels = metric_labels),
            ROS = factor(ROS, levels = paste0("R",c(1,2,3,4)),
                         labels = rollout_labels)) %>% 
     group_by(ROS, name) %>% group_split() %>% 
@@ -532,7 +533,6 @@ plot_diff <- function(file){
            p_increase = p_increase*100 %>% round) -> tab_combined
     
   set3 <- list()
-  # index <- read_rds("data/intermediate/index.rds")
   for(i in 1:nrow(index)){
     tab_combined %>% 
       filter(ROS == index$ROS[i],
@@ -627,7 +627,7 @@ plot_decisions <- function(file){
       #                 "HC_pd"),
     w == "2022",
     policy != 0
-    ) #%>% 
+    ) %>% 
     dplyr::select(ROS, policy, population, w, cases, death_o,
                   adjLE, QALYloss, HC) %>% 
     pivot_longer(cols = c(cases, death_o, adjLE, QALYloss, HC)) %>% 
@@ -677,6 +677,12 @@ plot_decisions <- function(file){
     summarise(pop = sum(pop)) -> tab2
   
   index <- read_rds("data/intermediate/index.rds")
+  index <- index %>% 
+    mutate(name = factor(name,
+                         levels = as.character(unique(index$name)),
+                         labels = metric_labels))
+  
+
   # index <- tab2 %>% group_by(name, ROS) %>% tally()
   set3 <- plot_diff(file)
   set1 <- list()
@@ -764,10 +770,7 @@ plot_decisions <- function(file){
   
   # column labels
   top_titles <- list()
-  top_label <- c("Deaths", "Cases", 
-                 "Adj. Life Expectancy",
-                 "Quality Adj. Life Years", 
-                 "Human Capital")
+  top_label <- metric_labels
   
   for(i in 1:10){
     if((i%%2) != 0) {

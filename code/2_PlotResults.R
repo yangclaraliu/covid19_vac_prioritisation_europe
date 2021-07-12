@@ -363,13 +363,9 @@ tmp_ve %>% filter(ROS == "R4", population == "Albania",
             by = "ve_set") %>% 
   group_by(variable) %>% group_split()
 
-
-
-
 tmp <- tmp_ve %>%
 left_join(ve_tab %>% rownames_to_column(var = "ve_set"),
             by = "ve_set") %>% 
-
   left_join(tmp_sero, by = "population") %>% 
   filter(policy != 0) %>% 
   group_by(ve_set, population, w, variable, ROS)  %>% group_split() %>% 
@@ -391,11 +387,7 @@ tmp %>%
                                       "adjLE",
                                       "QALYloss",
                                       "HC"),
-                           labels = c("Deaths","Cases", 
-                                      "Adj. Life Expectancy",
-                                      "Quality Adj. Life Years",
-                                      "Human Capital"
-                           )),
+                           labels = metric_labels),
          wb = factor(wb,
                      levels =  epi %>% 
                        filter(!loc %in% members_remove) %>% 
@@ -404,20 +396,17 @@ tmp %>%
                        arrange(tot) %>% pull(loc))) %>%  
   filter(!is.na(profile),
          !wb %in% members_remove,
-         ROS %in% rollout_labels[c(1:4)]) -> tmp_fp
+         ROS %in% rollout_labels[c(1,4)]) -> tmp_fp
 
-tmp_fp %>% 
-  mutate(policy = factor(policy, levels = 1:4)) %>% 
-  group_by(ROS, variable, policy, profile) %>% 
-  tally %>% pivot_wider(names_from = variable, values_from = n)  %>% 
-  group_by(ROS) %>% group_split() %>% .[[3]] %>% group_by(policy) %>% 
-  pivot_longer(cols = c("Deaths","Cases", 
-                        "Adj. Life Expectancy",
-                        "Quality Adj. Life Years",
-                        "Human Capital")) %>% 
-  ggplot(., aes(x = profile, y = value, group = name, color = name)) +
-  geom_line() +
-  facet_wrap(ROS ~ policy)
+# tmp_fp %>% 
+#   mutate(policy = factor(policy, levels = 1:4)) %>% 
+#   group_by(ROS, variable, policy, profile) %>% 
+#   tally %>% pivot_wider(names_from = variable, values_from = n)  %>% 
+#   group_by(ROS) %>% group_split() %>% .[[3]] %>% group_by(policy) %>% 
+#   pivot_longer(cols = metric_labels) %>% 
+#   ggplot(., aes(x = profile, y = value, group = name, color = name)) +
+#   geom_line() +
+#   facet_wrap(ROS ~ policy)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
@@ -472,6 +461,5 @@ ggplot(tmp_fp, aes(y = wb,
         # strip.text = element_text(size = 16)
         ) -> p
 
-ggsave("figs/fig5_test_debug.png", p, width = 15,height = 20, dpi = 500)
+ggsave("figs/fig5_extended_debug.png", p, width = 15,height = 20, dpi = 500)
 
-tmp_ve

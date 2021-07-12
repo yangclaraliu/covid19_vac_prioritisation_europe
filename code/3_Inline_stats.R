@@ -60,7 +60,7 @@ res[[3]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss",
                                 "HC"),
-                w == "Before 2023",
+                w == 2022,
                 !wb %in% members_remove) %>% 
   pivot_wider(names_from = variable, values_from = value) %>% 
   # left_join(res[[2]] %>% 
@@ -86,7 +86,7 @@ res[[3]] %>%
                                 # "VSLmlns_pd",
                                 "QALYloss",
                                 "HC"),
-                w == "Before 2023",
+                w == 2022,
                 !wb %in% members_remove)  %>% 
   # mutate(dir = if_else(variable %in% c("cases", "death_o"),
   #                      "min",
