@@ -1,6 +1,10 @@
 # #### generate decisions ####
 gen_priority <- function(m,
                          w = c(52*3, 52),
+                         uptake = c(rep(0,2),
+                                    rep(0.7, 10),
+                                    rep(0.9, 4)),
+                         VOC_intro = FALSE,
                          prp = NULL){
   
  n_param <- colnames(m) %in% c("t", 
@@ -20,12 +24,14 @@ gen_priority <- function(m,
                         ve_i = 0.95,
                         ms_date = combo[[j]]$ms_date,
                         ms_cov = combo[[j]]$ms_cov,
+                        cov_tar = uptake,
                         reporting = if_else(n_param == 2, 1, m$par3[i]),
                         ve_d = 0,
                         R = m$r[i],
                         wane = w,
                         mobility = schedule_raw,
                         prp = prp,
+                        VOC = VOC_intro
                         ) -> tmp[[i]]
      )
      print(paste0("Combo ", j, ", Row ",i,", country ",
@@ -52,37 +58,69 @@ gen_priority <- function(m,
 }
 
 # baseline model
-priority_selection_2 <- gen_priority(m = model_selected_2,
-                                     prp = priority_policy)
-write_rds(priority_selection_2, 
-          "data/intermediate/priority_selection_2_debug.rds")
+# priority_selection_2 <- gen_priority(m = model_selected_2,
+#                                      prp = priority_policy)
+# write_rds(priority_selection_2, 
+#           "data/intermediate/priority_selection_2_debug.rds")
 
 # baseline model + additional fitted parameter
-priority_selection_3 <- gen_priority(m = model_selected_3,
-                                     prp = priority_policy)
-write_rds(priority_selection_3, 
-          "data/intermediate/priority_selection_3_debug.rds")
+# priority_selection_3 <- gen_priority(m = model_selected_3,
+#                                      prp = priority_policy)
+# write_rds(priority_selection_3, 
+#           "data/intermediate/priority_selection_3_debug.rds")
 
 # baseline model + extended vaccine waning
-priority_selection_2_w <- gen_priority(m = model_selected_2, 
-                                       w = c(52*3, 52*3),
-                                       prp = priority_policy)
-write_rds(priority_selection_2_w, 
-          "data/intermediate/priority_selection_2_w_debug.rds")
+# priority_selection_2_w <- gen_priority(m = model_selected_2, 
+#                                        w = c(52*3, 52*3),
+#                                        prp = priority_policy)
+# write_rds(priority_selection_2_w, 
+#           "data/intermediate/priority_selection_2_w_debug.rds")
 
 # baseline model + additional fitted character + extended vaccine waning
-priority_selection_3_w <- gen_priority(m = model_selected_3, 
-                                       w = c(52*3, 52*3),
-                                       prp = priority_policy)
-write_rds(priority_selection_3_w, 
-          "data/intermediate/priority_selection_3_w_debug.rds")
+# priority_selection_3_w <- gen_priority(m = model_selected_3, 
+#                                        w = c(52*3, 52*3),
+#                                        prp = priority_policy)
+# write_rds(priority_selection_3_w, 
+#           "data/intermediate/priority_selection_3_w_debug.rds")
 
 # including children
-priority_selection_2_adol <- gen_priority(m = model_selected_2,
-                                          prp = priority_policy2)
+# priority_selection_2_adol <- gen_priority(m = model_selected_2,
+#                                           prp = priority_policy2)
+# 
+# write_rds(priority_selection_2_adol, 
+#           "data/intermediate/priority_selection_2_debug_adol.rds")
 
-write_rds(priority_selection_2_adol, 
-          "data/intermediate/priority_selection_2_debug_adol.rds")
+###### SA: realistic uptake #####
+# SA_uptake <- list()
+# SA_uptake[[1]] <- gen_priority(m = model_selected_2,
+#                                uptake = c(rep(0,2),
+#                                           rep(0.65, 10),
+#                                           rep(0.8, 4)),
+#                                prp = priority_policy)
+# 
+# 
+# SA_uptake[[2]] <- gen_priority(m = model_selected_2,
+#                                uptake = c(rep(0,2),
+#                                           rep(0.45, 10),
+#                                           rep(0.6, 4)),
+#                                prp = priority_policy)
+# 
+# 
+# write_rds(SA_uptake,
+#           "data/R1/SA_uptake.rds")
+
+##### SA: VOC #####
+# SA_VOC <- list()
+# 
+# SA_VOC[[1]] <- gen_priority(m = model_selected_2,
+#                             VOC_intro = T,
+#                             prp = priority_policy)
+# 
+# write_rds(SA_VOC,
+#           "data/R1/SA_VOC.rds")
+
+
+
 
 #### generate fit results ####  
 # select examples
@@ -213,8 +251,16 @@ gen_non_S <- function(file){
     mutate(wb = countrycode(population, "country.name", "wb")) %>% 
     right_join(tmp1, by = "population") -> tmp1
   
+  if(parse_number(file) == 3){
+    model_selected_tmp <- model_selected_3
+  }
+  
+  if(parse_number(file) == 2){
+    model_selected_tmp <- model_selected_2
+  }
+  
   tmp1 %>% 
-    left_join(model_selected_2, by = "wb") %>% 
+    left_join(model_selected_tmp, by = "wb") %>% 
     rename(date_start = date) %>% 
     mutate(date = date_start + t.x) %>% 
     dplyr::select(-t.x, -t.y, -country_index, -country_name) %>%

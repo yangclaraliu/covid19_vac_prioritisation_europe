@@ -287,7 +287,7 @@ plot_grid(row_1, row_2,
           axis = "l", ncol = 1,
           rel_heights = c(1.2, 1)) -> p
 
-ggsave("figs/fig2.png", p, width = 20, height = 14) 
+ggsave("figs/fig2_R1.png", p, width = 20, height = 14) 
 
 #### Figure 3: quality of fitting ####
 ##### Panel A-C: fitting time-series examples #####
@@ -297,8 +297,8 @@ p1_3 <- plot_fit_examples("data/intermediate/fit_examples_3.rds")
   
 
  ##### Panel D: predicted proportion of immune population #####
-p4_2 <- plot_non_S("data/intermediate/non_S_2.rds")
-p4_3 <- plot_non_S("data/intermediate/non_S_3.rds")
+p4_2 <- plot_non_S("data/intermediate/non_S_2_debug.rds")
+p4_3 <- plot_non_S("data/intermediate/non_S_3_debug.rds")
 
 plot_grid(p1_2, NULL, p4_2, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_2
@@ -325,7 +325,7 @@ ggsave("figs/supplemental/p_rho_3.png",p_rho_3, width = 25, height = 15)
 
 #### Figure 4: vaccination strategy selected by decision criteria ####
 decisions_2 <- plot_decisions("data/intermediate/priority_selection_2_debug.rds")
-ggsave(filename = "figs/Fig4_2_debug.png", decisions_2, width = 24, 
+ggsave(filename = "figs/Fig4_2_R1.png", decisions_2, width = 24, 
        height = 13.5, dpi = 500)
 
 decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds")
@@ -396,17 +396,38 @@ tmp %>%
                        arrange(tot) %>% pull(loc))) %>%  
   filter(!is.na(profile),
          !wb %in% members_remove,
-         ROS %in% rollout_labels[c(1,4)]) -> tmp_fp
+         ROS %in% rollout_labels[c(1:4)]) -> tmp_fp
 
-# tmp_fp %>% 
-#   mutate(policy = factor(policy, levels = 1:4)) %>% 
-#   group_by(ROS, variable, policy, profile) %>% 
-#   tally %>% pivot_wider(names_from = variable, values_from = n)  %>% 
-#   group_by(ROS) %>% group_split() %>% .[[3]] %>% group_by(policy) %>% 
-#   pivot_longer(cols = metric_labels) %>% 
-#   ggplot(., aes(x = profile, y = value, group = name, color = name)) +
-#   geom_line() +
-#   facet_wrap(ROS ~ policy)
+
+
+tmp_fp %>%
+  mutate(policy = factor(policy, levels = 1:4)) %>%
+  group_by(ROS, variable, policy, profile) %>%
+  tally %>% pivot_wider(names_from = variable, values_from = n)  %>%
+  group_by(policy) %>%
+  pivot_longer(cols = metric_labels) %>% mutate(value = if_else(is.na(value), as.integer(0), value)) %>%
+  mutate(name = factor(name, levels = metric_labels)) %>% 
+  ggplot(., aes(x = profile, y = value, group = policy, color = policy)) +
+  geom_line(size = 1.5) + geom_point(size = 2) +
+  facet_grid(ROS~name, switch = "y") +
+  scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
+  labs(x = "Vaccine Profile", y = "# of Countries Optimising by using a certain strategy", fill = "", color = "") +
+  theme_bw() +
+  theme(strip.background = element_rect(fill = NA, color = "black"),
+        legend.position = "top",
+        strip.text = element_text(size = 18),
+        # strip.background = element_rect(colour = "black"),
+        legend.text = element_text(size = 18),
+        axis.text = element_text(size = 18),
+        axis.title = element_text(size = 18),
+        # legend.text = element_text(size = 16),
+        # axis.text.y = element_text(size = 16),
+        # aspect.ratio = 1,
+        plot.margin = unit(c(0, 0, 0, 0), "cm")#,
+        # strip.text = element_text(size = 16)
+  )+                               # Change margins of ggplot2 plot
+  theme(plot.margin = unit(c(0.3, 0.3, 0.3, 0.3), "cm")) -> p
+ggsave("figs/R2R-R1/fig5_R1.pdf", p, width = 22,height = 15)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
@@ -461,5 +482,5 @@ ggplot(tmp_fp, aes(y = wb,
         # strip.text = element_text(size = 16)
         ) -> p
 
-ggsave("figs/fig5_extended_debug.png", p, width = 15,height = 20, dpi = 500)
+ggsave("figs/fig5_updated.png", p, width = 15,height = 20, dpi = 500)
 

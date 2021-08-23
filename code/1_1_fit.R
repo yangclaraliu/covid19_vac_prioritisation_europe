@@ -87,11 +87,11 @@ fit_func_2 <- function(input){
 
 out_3 <- out_2 <- list()
 for(i in r){
-  cn <- fit_yet$country_name[i]
+  cn <- "Albania" #fit_yet$country_name[i]
   wb_tmp <- countrycode(cn, "country.name","wb")
-  data_tmp <- epi[loc ==wb_tmp] %>% .[order(date)] %>% .[date <= "2020-12-31"]
+  data_tmp <- owid_epi[wb ==wb_tmp] %>% .[order(date)] %>% .[date <= "2020-12-31"]
   
-  epi[loc == wb_tmp & deaths > 1] %>% 
+  owid_epi[wb == wb_tmp & deaths > 1] %>% 
     .[order(date)] %>% 
     pull(date) %>% .[1] - 90 -> intro_LL
   
@@ -102,12 +102,12 @@ for(i in r){
   controlDE <- list(reltol=.0001, steptol=20, itermax = 100, trace = 10)
   
   # two parameter fitting
-  DEoptim(fn = fit_func_2,
-          lower = c(t_LL, 1.5),
-          upper = c(t_UL, 5),
-          control = controlDE) -> out_2[[i]]
-  res_2 <- out_2[[i]]$optim$bestmem# out_2[[i]]$member$bestmemit %>% tail(1)
-  res_2[1] <- round(res_2[1])
+  # DEoptim(fn = fit_func_2,
+  #         lower = c(t_LL, 1.5),
+  #         upper = c(t_UL, 5),
+  #         control = controlDE) -> out_2[[i]]
+  # res_2 <- out_2[[i]]$optim$bestmem# out_2[[i]]$member$bestmemit %>% tail(1)
+  # res_2[1] <- round(res_2[1])
   
   # three parameter fitting
   DEoptim(fn = fit_func_3,
@@ -143,7 +143,7 @@ for(i in r){
   dyna_3 %>% 
     mutate(status = "scaled",
            V1 = V1 * res_3[3]) %>% 
-    bind_rows(dyna_3, dyna_2) %>% 
+    bind_rows(dyna_3) %>% 
     mutate(status = if_else(is.na(status), "raw", status)) %>% 
     rename(t_internal = t,
            deaths_predicted = V1) %>%

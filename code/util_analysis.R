@@ -330,6 +330,9 @@ predict_outbreak <- function(
   reporting = 1,
   mobility = schedule_raw,
   prp = priority_policy,
+  VOC = FALSE,
+  VOC_u = 1.5,
+  VOC_date = "2021-04-15",
   # eff = NULL,#c(rep(0.9,10),rep(0.8,6)),
   wane = c(52*3, 52), # natural waning; vaccine waning
   R = NULL) {
@@ -354,6 +357,20 @@ predict_outbreak <- function(
   
   params_baseline$processes[[2]]$prob[1,] <- 
     params_baseline$processes[[2]]$prob[1,] * reporting
+  
+  # if we take VOCs into consideration
+  if(VOC == T){
+    data.table(u =  params_baseline$pop[[1]]$u,
+               u_voc =  params_baseline$pop[[1]]$u*VOC_u) -> u_table
+    
+    params_baseline$schedule[["change_u"]] <-  list(
+      parameter = "u",
+      pops = numeric(),
+      mode = "assign",
+      values = list(u_table$u, u_table$u_voc),
+      times = c(params_baseline$date0, VOC_date)
+    )
+  }
   
   prp %>%
     map(~ vac_policy(

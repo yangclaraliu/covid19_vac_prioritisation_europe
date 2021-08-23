@@ -13,7 +13,7 @@ scientific_10 <- function(x){
         replacement = "") %>%
     gsub(pattern = "e",
          replacement = " %*% 10^",
-         x = .) %>%
+         x = .) %>%f
     sub(pattern = "1 %*% ",
         replacement = "",
         x = ., fixed = T) %>%
@@ -43,7 +43,9 @@ theme_map <- function(...) {
 
 policy_labels <- c("V+", "V20", "V60", "V75")
 rollout_labels <- paste0("R",1:4)
-priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
+# priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
+priority_colors <- c("#E69F00", "#D55E00", "#56B4E9", "#0072B2")
+
 metric_labels <- c("Deaths", "Cases", 
                    "Adj. Life Expectancy\n(cLY) Loss",
                    "Quality Adj. Life Years\n(cQALY) Loss",
@@ -211,7 +213,7 @@ plot_non_S <- function(file){
   sero %>%
     mutate(p = if_else(wb %in% members_remove, as.numeric(NA), p)) %>%
     left_join(selected, by = "wb") %>%
-    full_join(members_world, by = "wb") %>%
+    full_join(members_world, by = "wb") %>% ungroup %>% 
     mutate(p_np = ntile(p, 10) %>% factor) %>%
     mutate(Fit = if_else(wb %in% members_remove, F, T),
            EUR = if_else(wb %in% members$wb, T, F)) %>%
@@ -808,7 +810,7 @@ plot_decisions <- function(file){
       draw_label(
         side_labels[i],
         fontface = 'bold',
-        angle = 270,
+        angle = 90,
         y = 0.5,
         size = 20
       ) 
@@ -830,40 +832,43 @@ plot_decisions <- function(file){
             top_titles[[2]], 
             
             # first row 
+            side_titles[[1]],
             plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 14), set2[[1]], 
             plot_grid(set1[[5]]) + draw_figure_label("(B)", size = 14), set2[[5]],
             plot_grid(set1[[9]]) + draw_figure_label("(C)", size = 14), set2[[9]], 
             plot_grid(set1[[13]]) + draw_figure_label("(D)", size = 14), (set2[[13]]), 
             plot_grid(set1[[17]]) + draw_figure_label("(E)", size = 14), (set2[[17]]), 
-            side_titles[[1]],
+
             
             # second row 
+            side_titles[[2]],
             plot_grid(set1[[2]]) + draw_figure_label("(F)", size = 14), set2[[2]], 
             plot_grid(set1[[6]]) + draw_figure_label("(G)", size = 14), set2[[6]],
             plot_grid(set1[[10]]) + draw_figure_label("(H)", size = 14), set2[[10]], 
             plot_grid(set1[[14]]) + draw_figure_label("(I)", size = 14), set2[[14]], 
             plot_grid(set1[[18]]) + draw_figure_label("(J)", size = 14), set2[[18]], 
-            side_titles[[2]],
+
             
             # third row
+            side_titles[[3]],
             plot_grid(set1[[3]]) + draw_figure_label("(K)", size = 14), set2[[3]], 
             plot_grid(set1[[7]]) + draw_figure_label("(L)", size = 14), set2[[7]],
             plot_grid(set1[[11]]) + draw_figure_label("(M)", size = 14), set2[[11]],
             plot_grid(set1[[15]]) + draw_figure_label("(N)", size = 14), set2[[15]], 
             plot_grid(set1[[19]]) + draw_figure_label("(O)", size = 14), set2[[19]], 
-            side_titles[[3]],
+  
             
             # fourth row
+            side_titles[[4]],
             plot_grid(set1[[4]]) + draw_figure_label("(P)", size = 14), set2[[4]], 
             plot_grid(set1[[8]]) + draw_figure_label("(Q)", size = 14), set2[[8]],
             plot_grid(set1[[12]]) + draw_figure_label("(R)", size = 14), set2[[12]], 
             plot_grid(set1[[16]]) + draw_figure_label("(S)", size = 14), set2[[16]], 
             plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 14), set2[[20]], 
-            side_titles[[4]],
             
             top_titles[[2]], top_titles[[2]], top_titles[[2]], legend_all,
             ncol = 11, nrow = 6, 
-            align = "hv", rel_widths = c(rep(c(15,1),5),1),
+            align = "hv", rel_widths = c(1,rep(c(15,1),5)),
             rel_heights = c(0.2, 1, 1, 1, 1, 0.1),
             greedy = T, axis = "rlbt", vjust = 1) -> p
   
