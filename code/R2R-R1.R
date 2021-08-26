@@ -37,6 +37,22 @@ bind_rows(data_baseline, data) %>%
 tmp %>% 
   # filter(diff1 != 0) %>%
   group_by(ROS, name, `baseline`, `1`) %>% tally %>% 
+  mutate(unchanged = baseline == `1`) %>% 
+  group_by(unchanged) %>% summarise(n = sum(n)) %>% 
+  mutate(p = n/sum(n))
+
+tmp %>% 
+  # filter(diff2 != 0) %>%
+  group_by(ROS, name, `baseline`, `2`) %>% tally %>% 
+  mutate(unchanged = baseline == `2`) %>% 
+  filter(ROS %in% c(3,4)) %>% 
+  group_by(unchanged) %>% summarise(n = sum(n)) %>% 
+  mutate(p = n/sum(n))
+
+
+tmp %>% 
+  # filter(diff1 != 0) %>%
+  group_by(ROS, name, `baseline`, `1`) %>% tally %>% 
   pivot_wider(names_from = name, values_from = n) %>% 
   arrange(`baseline`,`1`) %>% 
   pivot_longer(cols = c(cases, death_o, adjLE, QALYloss, HC)) %>% 

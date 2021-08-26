@@ -381,32 +381,25 @@ lapply(16:22, function(x){
 })
 
 #### discussion on adolescents ####
-
-read_rds("data/intermediate/priority_selection_2_adol.rds") %>% 
-  .[[4]] %>% 
-  map(rename, policy = ROS) %>% 
-  bind_rows(.id = "ROS") %>% 
-  mutate(ROS = paste0("R",ROS)) 
-
 w <- read_rds("data/intermediate/priority_selection_2_adol.rds") %>% 
   .[[3]] %>% 
   bind_rows(.id = "ROS") %>% 
   mutate(ROS = paste0("R",ROS)) 
 
-wo <- read_rds("data/intermediate/priority_selection_2.rds") %>% 
+wo <- read_rds("data/intermediate/priority_selection_2_debug.rds") %>% 
   .[[3]] %>% 
   bind_rows(.id = "ROS") %>% 
   mutate(ROS = paste0("R",ROS)) %>% 
   filter(policy %in% c(0,3,4))
 
-
 vars <- c("death_o", "cases",  "adjLE", "QALYloss","HC")
+
 tmp <- list()
 
 for(i in 1:5){
   bind_rows(w, wo) %>% 
     distinct() %>% 
-    filter(w == "Before 2023") %>% 
+    filter(w %in% c("Before 2023", "2022")) %>% 
     arrange(population, ROS, policy) %>%
     separate(policy, into = c("policy","type")) %>% 
     mutate(policy = parse_number(policy),
@@ -432,8 +425,30 @@ tmp %>%
                                     "Quality Adj. Life Years",
                                     "Human Capital"
                          ))) %>% 
-  filter(p1 > 0 | p2 > 0) %>% 
-  arrange(desc(p1)) %>% View()
+  filter(policy == 4) %>% 
+  group_by(ROS, policy) 
+  # filter(p1 > 0 | p2 > 0) %>% 
+  # arrange(desc(p1)) %>% View()
+
+tmp %>% 
+  bind_rows(.id = "metric") %>% 
+  mutate(metric = factor(metric,
+                         levels = 1:5,
+                         labels = c("Deaths","Cases", 
+                                    "Adj. Life Expectancy",
+                                    "Quality Adj. Life Years",
+                                    "Human Capital"
+                         ))) %>%
+  dplyr::select(-a, -b) %>% 
+  pivot_longer(cols = c(p1, p2)) %>% 
+  mutate(policy = factor(policy, 
+                         levels = 3:4,
+                         labels = c("V60", "V75")),
+         name = factor(name,
+                       levels = c("p1", "p2"),
+                       labels = c("a", "b")),
+         lab = paste0(policy,"_",name)) %>% 
+  pull(lab) %>% unique
 
 
 tmp %>% 
@@ -613,5 +628,84 @@ main %>%
   geom_vline(data = marker, aes(xintercept = marker1), color = "red") +
   geom_vline(data = marker, aes(xintercept = marker2), color = "orange") +
   geom_vline(data = marker, aes(xintercept = marker3), color = "yellow") +
-  geom_vline(data = marker, aes(xintercept = marker4), color = "green") 
+  geom_vline(data = marker, aes(xintercept = marker4), color = "green")
+
+
+
+file = "data/intermediate/priority_selection_2_debug.rds"
+
+res <- read_rds(file)
+
+res[[3]] %>% 
+  bind_rows(.id = "ROS") %>% 
+  mutate(ROS = paste0("R",ROS),
+         wb = countrycode(population, "country.name", "wb"),
+         policy = if_else(wb %in% members_remove, 
+                          as.character(NA), policy)) %>% 
+  dplyr::filter(
+    # variable %in% c("cases", "death_o",
+    #                 "adjLE_pd", 
+    #                 # "VSLmlns_pd",
+    #                 "QALYloss_pd",
+    #                 "HC_pd"),
+    w == "2022",
+    policy != 0
+  ) %>% 
+  dplyr::select(ROS, policy, population, w, cases, death_o,
+                adjLE, QALYloss, HC) %>% 
+  pivot_longer(cols = c(cases, death_o, adjLE, QALYloss, HC)) %>% 
+  # mutate(dir = if_else(variable %in% c("cases", "death_o"),
+  #                      "min",
+  #                      "max"),
+  #        # we flip the sign for dir == "min" because we are looking to maximize
+  #        # all the _pd HE measures, but minimise all the cases and death counts
+  #        value = if_else(dir == "min", -1*value, value),
+  #        value = if_else(wb %in% members_remove, as.numeric(NA), value)) %>% 
+  group_by(population, name, ROS) %>% group_split() %>% 
+  map(mutate, rk = rank(value)) %>% 
+  map(arrange, desc(value)) %>% bind_rows() %>% 
+  filter(rk == 1) %>% mutate(wb = countrycode(population, "country.name", "wb")) %>% 
+  group_by(ROS, name) %>% group_split() %>% 
+  map(full_join, members_world, by = "wb") %>% 
+  map(st_as_sf) %>% 
+  map(arrange, ROS) %>% 
+  map(mutate, ROS = zoo::na.locf(ROS)) %>%
+  map(mutate, name = zoo::na.locf(name)) %>% 
+  bind_rows() %>% 
+  mutate(name = factor(name,
+                       levels = c("death_o", "cases", 
+                                  "adjLE",
+                                  # "VSLmlns_pd",
+                                  "QALYloss",
+                                  "HC"),
+                       labels = metric_labels),
+         ROS = factor(ROS,
+                      levels = rollout_labels),
+         policy = factor(policy)) %>% 
+  st_as_sf() -> tab1
+
+tab1 %>% 
+  data.table %>% 
+  dplyr::select(ROS, policy, population, name) %>% 
+  filter(!is.na(policy)) %>% 
+  pivot_wider(names_from = "name", values_from = "policy") %>% 
+  pivot_longer(cols = metric_labels) %>% 
+  group_by(ROS, population) %>% 
+  mutate(rk = rank(value, ties.method = "min"),
+         rk_max = max(rk)) %>% 
+  filter(rk_max == 1) %>% 
+  pivot_wider(names_from = name, values_from = value) %>% 
+  group_by(ROS) %>% tally %>% 
+  mutate(p = 38-n)
+
+tab1 %>% 
+  data.table %>% 
+  dplyr::select(ROS, policy, population, name) %>% 
+  filter(!is.na(policy)) %>% 
+  group_by(population, name) %>% 
+  mutate(policy = as.numeric(policy), 
+         rk = rank(policy, ties.method = "min"),
+         rk_max = max(rk)) %>% 
+  filter(rk_max == 1) %>% 
+  pivot_wider(names_from = ROS, values_from = policy)
 

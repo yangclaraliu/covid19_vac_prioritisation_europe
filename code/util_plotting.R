@@ -43,8 +43,8 @@ theme_map <- function(...) {
 
 policy_labels <- c("V+", "V20", "V60", "V75")
 rollout_labels <- paste0("R",1:4)
-# priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
-priority_colors <- c("#E69F00", "#D55E00", "#56B4E9", "#0072B2")
+priority_colors <- c("#DAF0BD", "#9DCC5F", "#6EC3C1", "#0D5F8A")
+# priority_colors <- c("#E69F00", "#D55E00", "#56B4E9", "#0072B2")
 
 metric_labels <- c("Deaths", "Cases", 
                    "Adj. Life Expectancy\n(cLY) Loss",
@@ -174,7 +174,8 @@ plot_fit_examples <- function(file){
   
   if(n_param == 2){
     p1 <- p1 +   scale_color_manual(values = c("black", "grey70", 
-                                               viridis(option = "inferno", 10)[5]),
+                                               # viridis(option = "inferno", 10)[5]),
+                                              RColorBrewer::brewer.pal(9,"YlGnBu")[5]),
                                     breaks = c("deterministic", "stochastic", "empirical"),
                                     labels = c("Prediction:\nDeterministic",
                                                "Prediction:\nStochastic",
@@ -185,7 +186,8 @@ plot_fit_examples <- function(file){
     p1 <- p1 +   
       geom_line(data = subset(eg_fit, metric == "deterministic_raw"), size = 1.5) +
       scale_color_manual(values = c("black", "grey70", "grey40",
-                                               viridis(option = "inferno", 10)[5]),
+                                    # viridis(option = "inferno", 10)[5]),
+                                    RColorBrewer::brewer.pal(9,"YlGnBu")[5]),
                                     breaks = c("deterministic", 
                                                "stochastic",
                                                "deterministic_raw",
@@ -214,7 +216,7 @@ plot_non_S <- function(file){
     mutate(p = if_else(wb %in% members_remove, as.numeric(NA), p)) %>%
     left_join(selected, by = "wb") %>%
     full_join(members_world, by = "wb") %>% ungroup %>% 
-    mutate(p_np = ntile(p, 10) %>% factor) %>%
+    mutate(p_np = ntile(p, 9) %>% factor) %>%
     mutate(Fit = if_else(wb %in% members_remove, F, T),
            EUR = if_else(wb %in% members$wb, T, F)) %>%
     st_as_sf() -> tmp
@@ -251,12 +253,19 @@ plot_non_S <- function(file){
     coord_sf(xlim = c(-25, 90),
              ylim = c(30, 75),
              expand = F) +
-    viridis::scale_fill_viridis(na.value = "grey90", discrete = T, 
-                                option = "inferno",
-                                na.translate = F, direction = -1,
-                                labels = c(bar_labels[1], rep("",3), 
-                                           bar_labels[5], rep("",4),
-                                           bar_labels[10])) +
+    # viridis::scale_fill_viridis(na.value = "grey90", discrete = T, 
+    #                             option = "inferno",
+    #                             na.translate = F, direction = -1,
+    #                             labels = c(bar_labels[1], rep("",3), 
+    #                                        bar_labels[5], rep("",4),
+    #                                        bar_labels[10])) +
+    
+    scale_fill_brewer(palette = "YlGnBu",
+                       na.value = "grey90", #discrete = T,
+                       na.translate = F, direction = 1,
+                       labels = c(bar_labels[1], rep("",3),
+                                  bar_labels[5], rep("",3),
+                                  bar_labels[9])) +
     theme_map() +
     labs(fill = "Proportion of population no longer\nsusceptible to SARS-CoV-2",
          title = "") +
@@ -742,6 +751,18 @@ plot_decisions <- function(file){
       theme(legend.position = "none",
             plot.margin = unit(c(0, 0, 0, 0), "cm")) -> set1[[i]]
     
+    if(i == 5 &
+       file %in% c("data/intermediate/priority_selection_2_debug.rds",
+                   "data/intermediate/priority_selection_2_w_debug.rds")){
+      set1[[i]] <- set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2])
+    }
+    
+    if(i == 6 &
+       file %in% c("data/intermediate/priority_selection_2_w_debug.rds")){
+      set1[[i]] <- set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2])
+    }
+    
+
     set1[[i]] + annotation_custom(ggplotGrob(set3[[i]]),
                                   xmin = 45, xmax = 90,
                                   ymin = 60, ymax = 75) -> set1[[i]]
@@ -774,11 +795,13 @@ plot_decisions <- function(file){
   top_titles <- list()
   top_label <- metric_labels
   
-  for(i in 1:10){
-    if((i%%2) != 0) {
+  for(i in 1:6){
+    # if((i%%2) != 0) {
+    if(i <= 5){
       top_titles[[i]] <- ggdraw() + 
         draw_label(
-          top_label[(i+1)/2],
+          # top_label[(i+1)/2],
+          top_label[i],
           fontface = 'bold',
           x = 0.5,
           size = 20
@@ -787,8 +810,9 @@ plot_decisions <- function(file){
           plot.margin = margin(0, 0, 0, 7)
         )
     }
-    if((i%%2) == 0){
-      top_titles[[i]] <- ggdraw() + 
+    # if((i%%2) == 0){
+    if(i == 6){
+      top_titles[[i]] <- ggdraw() +
         draw_label(
           "",
           fontface = 'bold',
@@ -819,57 +843,64 @@ plot_decisions <- function(file){
     )
   }
   
-  legend_all <- get_legend(set1[[3]] +
+  set1[[3]] +
+    scale_fill_manual(values = colors_tmp, 
+                      na.value = "white",
+                      breaks = breaks_tmp,
+                      labels = c(labels_tmp[1:4],"")) +
+    geom_sf(color = "white") -> eg_legend
+  
+  legend_all <- get_legend(eg_legend +
                              theme(legend.position = "top",
-                                   legend.title = element_text(size = 16),
-                                   legend.text = element_text(size = 16)))
+                                   legend.title = element_text(size = 20),
+                                   legend.text = element_text(size = 20)))
 
   
   # put all elements together
-  plot_grid(top_titles[[1]], top_titles[[2]], top_titles[[3]], top_titles[[4]],
-            top_titles[[5]], top_titles[[6]], top_titles[[7]], top_titles[[8]],
-            top_titles[[9]], top_titles[[10]],
-            top_titles[[2]], 
+  plot_grid(top_titles[[6]], top_titles[[1]], top_titles[[2]], top_titles[[3]], top_titles[[4]],
+            top_titles[[5]], # top_titles[[6]], top_titles[[7]], top_titles[[8]],
+            # top_titles[[9]], top_titles[[10]],
+            # top_titles[[2]], 
             
             # first row 
             side_titles[[1]],
-            plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 14), set2[[1]], 
-            plot_grid(set1[[5]]) + draw_figure_label("(B)", size = 14), set2[[5]],
-            plot_grid(set1[[9]]) + draw_figure_label("(C)", size = 14), set2[[9]], 
-            plot_grid(set1[[13]]) + draw_figure_label("(D)", size = 14), (set2[[13]]), 
-            plot_grid(set1[[17]]) + draw_figure_label("(E)", size = 14), (set2[[17]]), 
+            plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 14), # set2[[1]], 
+            plot_grid(set1[[5]]) + draw_figure_label("(B)", size = 14), # set2[[5]],
+            plot_grid(set1[[9]]) + draw_figure_label("(C)", size = 14), # set2[[9]], 
+            plot_grid(set1[[13]]) + draw_figure_label("(D)", size = 14), # (set2[[13]]), 
+            plot_grid(set1[[17]]) + draw_figure_label("(E)", size = 14), # (set2[[17]]), 
 
             
             # second row 
             side_titles[[2]],
-            plot_grid(set1[[2]]) + draw_figure_label("(F)", size = 14), set2[[2]], 
-            plot_grid(set1[[6]]) + draw_figure_label("(G)", size = 14), set2[[6]],
-            plot_grid(set1[[10]]) + draw_figure_label("(H)", size = 14), set2[[10]], 
-            plot_grid(set1[[14]]) + draw_figure_label("(I)", size = 14), set2[[14]], 
-            plot_grid(set1[[18]]) + draw_figure_label("(J)", size = 14), set2[[18]], 
+            plot_grid(set1[[2]]) + draw_figure_label("(F)", size = 14), # set2[[2]], 
+            plot_grid(set1[[6]]) + draw_figure_label("(G)", size = 14), # set2[[6]],
+            plot_grid(set1[[10]]) + draw_figure_label("(H)", size = 14), # set2[[10]], 
+            plot_grid(set1[[14]]) + draw_figure_label("(I)", size = 14), # set2[[14]], 
+            plot_grid(set1[[18]]) + draw_figure_label("(J)", size = 14), # set2[[18]], 
 
             
             # third row
             side_titles[[3]],
-            plot_grid(set1[[3]]) + draw_figure_label("(K)", size = 14), set2[[3]], 
-            plot_grid(set1[[7]]) + draw_figure_label("(L)", size = 14), set2[[7]],
-            plot_grid(set1[[11]]) + draw_figure_label("(M)", size = 14), set2[[11]],
-            plot_grid(set1[[15]]) + draw_figure_label("(N)", size = 14), set2[[15]], 
-            plot_grid(set1[[19]]) + draw_figure_label("(O)", size = 14), set2[[19]], 
+            plot_grid(set1[[3]]) + draw_figure_label("(K)", size = 14), # set2[[3]], 
+            plot_grid(set1[[7]]) + draw_figure_label("(L)", size = 14), # set2[[7]],
+            plot_grid(set1[[11]]) + draw_figure_label("(M)", size = 14), # set2[[11]],
+            plot_grid(set1[[15]]) + draw_figure_label("(N)", size = 14), # set2[[15]], 
+            plot_grid(set1[[19]]) + draw_figure_label("(O)", size = 14), # set2[[19]], 
   
             
             # fourth row
             side_titles[[4]],
-            plot_grid(set1[[4]]) + draw_figure_label("(P)", size = 14), set2[[4]], 
-            plot_grid(set1[[8]]) + draw_figure_label("(Q)", size = 14), set2[[8]],
-            plot_grid(set1[[12]]) + draw_figure_label("(R)", size = 14), set2[[12]], 
-            plot_grid(set1[[16]]) + draw_figure_label("(S)", size = 14), set2[[16]], 
-            plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 14), set2[[20]], 
+            plot_grid(set1[[4]]) + draw_figure_label("(P)", size = 14), # set2[[4]], 
+            plot_grid(set1[[8]]) + draw_figure_label("(Q)", size = 14), # set2[[8]],
+            plot_grid(set1[[12]]) + draw_figure_label("(R)", size = 14), # set2[[12]], 
+            plot_grid(set1[[16]]) + draw_figure_label("(S)", size = 14), # set2[[16]], 
+            plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 14), # set2[[20]], 
             
-            top_titles[[2]], top_titles[[2]], top_titles[[2]], legend_all,
-            ncol = 11, nrow = 6, 
-            align = "hv", rel_widths = c(1,rep(c(15,1),5)),
-            rel_heights = c(0.2, 1, 1, 1, 1, 0.1),
+            top_titles[[6]], top_titles[[6]], top_titles[[6]], legend_all,
+            ncol = 6, nrow = 6, 
+            align = "hv", rel_widths = c(2,rep(c(15),5)),
+            rel_heights = c(0.4, 1, 1, 1, 1, 0.3),
             greedy = T, axis = "rlbt", vjust = 1) -> p
   
 }

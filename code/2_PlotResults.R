@@ -294,19 +294,20 @@ ggsave("figs/fig2_R1.png", p, width = 20, height = 14)
 #### put together results that shows fitting quality
 p1_2 <- plot_fit_examples("data/intermediate/fit_examples_2.rds")
 p1_3 <- plot_fit_examples("data/intermediate/fit_examples_3.rds")
-  
+
+p1_2_500 <- plot_fit_examples("data/intermediate/fit_examples_2_500.rds")
 
  ##### Panel D: predicted proportion of immune population #####
 p4_2 <- plot_non_S("data/intermediate/non_S_2_debug.rds")
 p4_3 <- plot_non_S("data/intermediate/non_S_3_debug.rds")
 
-plot_grid(p1_2, NULL, p4_2, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
+plot_grid(p1_2_500, NULL, p4_2, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_2
 
 plot_grid(p1_3, NULL, p4_3, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_3
 
-ggsave("figs/Fig3_2_debug.png",fig3_2, width = 25, height = 15)
+ggsave("figs/Fig3_2_R1.png",fig3_2, width = 25, height = 15)
 ggsave("figs/Fig3_3_debug.png",fig3_3, width = 25, height = 15)
 
 p_t_2 <- plot_fitted_res(model_selected_2)
@@ -398,8 +399,6 @@ tmp %>%
          !wb %in% members_remove,
          ROS %in% rollout_labels[c(1:4)]) -> tmp_fp
 
-
-
 tmp_fp %>%
   mutate(policy = factor(policy, levels = 1:4)) %>%
   group_by(ROS, variable, policy, profile) %>%
@@ -427,7 +426,10 @@ tmp_fp %>%
         # strip.text = element_text(size = 16)
   )+                               # Change margins of ggplot2 plot
   theme(plot.margin = unit(c(0.3, 0.3, 0.3, 0.3), "cm")) -> p
-ggsave("figs/R2R-R1/fig5_R1.pdf", p, width = 22,height = 15)
+
+p <- egg::tag_facet(p, size = 8)
+
+ggsave("figs/fig5_R1.png", p, width = 22,height = 15)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
@@ -481,6 +483,8 @@ ggplot(tmp_fp, aes(y = wb,
         plot.margin = unit(c(0, 0, 0, 0), "cm")#,
         # strip.text = element_text(size = 16)
         ) -> p
+
+p <- egg::tag_facet(p)
 
 ggsave("figs/fig5_updated.png", p, width = 15,height = 20, dpi = 500)
 

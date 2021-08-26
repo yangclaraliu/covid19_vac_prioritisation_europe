@@ -127,7 +127,7 @@ gen_priority <- function(m,
 fit_examples <- data.frame(wb = c("GBR", "GEO", "HUN")
                            ) %>%
   left_join(members, by = "wb") %>%
-  left_join(model_selected_3, by = "wb")
+  left_join(model_selected_2, by = "wb")
 
 
 if(!"par3" %in% colnames(fit_examples)){
@@ -160,7 +160,7 @@ for(i in 1:nrow(fit_examples)){
                      deterministic = F) -> params
   params$processes[[2]]$pro[1,] <-
     params$processes[[2]]$pro[1,] * fit_examples$par3[i]
-  cm_simulate(params, n_threads = 4, n = 100) -> res_st[[i]]
+  cm_simulate(params, n_threads = 4, n = 500) -> res_st[[i]]
   rm(params)
 }
 
@@ -196,7 +196,7 @@ seg2 %>% dplyr::select(colnames(seg1)) %>%
       rename(death_o = deaths)
     ) -> seg
 
-write_rds(seg, "data/intermediate/fit_examples_3.rds")
+write_rds(seg, "data/intermediate/fit_examples_2_500.rds")
 
 #### look at predicted proportion immuned ####
 gen_history <- function(m, w = c(52*3*7, 52*7)){

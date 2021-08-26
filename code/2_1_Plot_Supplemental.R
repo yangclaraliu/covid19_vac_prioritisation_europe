@@ -337,8 +337,18 @@ tab2 %>%
   summarise(tot = sum(tot)) -> tab2
 
 tab2 %>% 
+  group_by(ROS, population, w, variable) %>% group_split() %>%
+  map(mutate, rk = rank(value)) %>% map(filter, rk == 1) %>% bind_rows() %>% 
+  left_join(members_pop, by = c("population" = "name")) %>%
+  filter(!is.na(wb)) %>% 
+  ungroup %>% 
+  group_by(ROS, w, variable, policy) %>% 
+  tally() -> tab2
+
+tab2 %>% 
   ggplot(., aes(x = w,
-                y = tot,
+                y = n,
+                # y = tot,
                 color = policy,
                 fill = policy)) +
   geom_bar(stat = "identity",
@@ -363,7 +373,7 @@ tab2 %>%
         panel.grid.minor = element_blank(),
         panel.border = element_blank()) -> figS4
 
-ggsave(filename = "figs/supplemental/timing_debug.png", figS4,
+ggsave(filename = "figs/supplemental/timing_debug_R1.png", figS4,
        width = 10, height = 10)
 
 #### country name table ####
