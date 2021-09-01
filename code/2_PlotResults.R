@@ -308,14 +308,13 @@ plot_grid(p1_3, NULL, p4_3, ncol = 3, rel_widths = c(1, 0.1,4), align = "h",
           axis = "bt") -> fig3_3
 
 ggsave("figs/Fig3_2_R1.png",fig3_2, width = 25, height = 15)
-ggsave("figs/Fig3_3_debug.png",fig3_3, width = 25, height = 15)
+ggsave("figs/supplemental/Fig3_3_debug_R1.png",fig3_3, width = 25, height = 15)
 
 p_t_2 <- plot_fitted_res(model_selected_2)
 p_t_3 <- plot_fitted_res(model_selected_3)
 
 p_r_2 <- plot_fitted_res(model_selected_2, var = 2)
 p_r_3 <- plot_fitted_res(model_selected_3, var = 2)
-
 p_rho_3 <- plot_fitted_res(model_selected_3, var = 3)
 
 ggsave("figs/supplemental/p_t_2.png",p_t_2, width = 25, height = 15)
@@ -330,15 +329,15 @@ ggsave(filename = "figs/Fig4_2_R1.png", decisions_2, width = 24,
        height = 13.5, dpi = 500)
 
 decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds")
-ggsave(filename = "figs/Fig4_2_w_debug.png", decisions_2_w, width = 24,
+ggsave(filename = "figs/Fig4_2_w_debug_R1.png", decisions_2_w, width = 24,
        height = 13.5)
 
 decisions_3 <- plot_decisions("data/intermediate/priority_selection_3_debug.rds")
-ggsave(filename = "figs/Fig4_3_debug.png", decisions_3, width = 24, 
+ggsave(filename = "figs/Fig4_3_debug_R1.png", decisions_3, width = 24, 
        height = 13.5)
 
 decisions_3_w <- plot_decisions("data/intermediate/priority_selection_3_w_debug.rds")
-ggsave(filename = "figs/Fig4_3_w_debug.png", decisions_3_w, width = 24, height = 13.5)
+ggsave(filename = "figs/Fig4_3_w_debug_R1.png", decisions_3_w, width = 24, height = 13.5)
 #ggsave(filename = "figs/Fig4_2.png", p, width = 24, height = 13.5)
 
 #### figure 5: decision by VE ####

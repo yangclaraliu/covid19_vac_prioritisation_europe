@@ -392,7 +392,8 @@ plot_fitted_res <- function(m, var = 1){
       geom_sf(data = tmp %>% filter(is.na(fit)), 
               fill = "grey50", 
               color = "black") +
-      scale_fill_viridis(discrete = T, na.translate = F, option = "inferno",
+      scale_fill_brewer(palette = "YlGnBu", 
+                        na.translate = F,
                          labels = c(bar_labels[1],
                                     rep("",8),
                                     bar_labels[10])) +
@@ -428,8 +429,7 @@ plot_fitted_res <- function(m, var = 1){
       geom_sf(data = tmp %>% filter(is.na(fit)), 
               fill = "grey50", 
               color = "black") +
-      scale_fill_viridis(option = "inferno",
-                         breaks = c(0.25, 1)) +
+      scale_fill_viridis(breaks = c(0.25, 1)) +
       coord_sf(xlim = c(-25, 90),
                ylim = c(30, 75),
                expand = F) +

@@ -709,3 +709,18 @@ tab1 %>%
   filter(rk_max == 1) %>% 
   pivot_wider(names_from = ROS, values_from = policy)
 
+
+epi %>% 
+  dplyr::select(-date, -cases) %>% 
+  group_by(loc) %>% group_split() %>% 
+  map(mutate, rk = rank(desc(deaths), ties.method = "first")) %>% 
+  bind_rows() %>% filter(rk == 1)%>% 
+  dplyr::select(-rk) %>% 
+  left_join(members_pop, by = c("loc" = "wb")) %>% 
+  filter(!loc %in% members_remove) %>% 
+  mutate(rate = deaths/tot,
+         r_tile = ntile(rate, 3),
+         n_tile = ntile(deaths,3)) %>% 
+  View()
+  filter(loc %in% c("GEO", "HUN","GBR"))
+  

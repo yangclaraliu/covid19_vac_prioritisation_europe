@@ -56,15 +56,15 @@ GDPpc %>%
 tmp %>% 
   ggplot(aes(fill = log(GDPpc, 10))) +
   geom_sf() +
-  scale_fill_viridis(option = "inferno") +
+  scale_fill_viridis() +
   coord_sf(xlim = c(-25, 90),
            ylim = c(30, 75),
            expand = F) +
   theme_map() +
   theme(strip.text = element_text(size = 14),
-        legend.position = "right",
-        legend.text = element_text(size = 14),
-        legend.title = element_text(size = 14),
+        legend.position = "top",
+        legend.text = element_text(size = 16),
+        legend.title = element_text(size = 20),
         axis.text = element_blank(),
         axis.ticks = element_blank(),
         plot.margin = unit(c(0, 0, 0, 0), "cm"),
