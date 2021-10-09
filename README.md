@@ -24,6 +24,10 @@ pacman::p_load(
   - `2_1_Plot_Supplemental.R` 
 - `misc_LitRev.`: code to extract literature from *medRxiv*
 - covid_for_fitting: this framework was developed for the paper titled [Association of tiered restrictions and a second lockdown with COVID-19 deaths and hospital admissions in England: a modelling stud](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30984-1/fulltext) by [Nicholas Davies](https://github.com/nicholasdavies/covid-tiers) et al. and can be found [here](https://github.com/nicholasdavies/covid-tiers/tree/main/fitting/covidm_for_fitting).
+
+## data
+- For those who are interested in country-, roll-out scenario- and decision-making metric-specific results, please see `data/Figure4Res_byCountry.rds`.
+
 ## figs
 ### intermediate
 - DEoptim_fit_2: fitting for R0 and infection introduction dates `DEoptim`
@@ -32,8 +36,3 @@ pacman::p_load(
 - gs_fit_best: fitting for R0 and infection introduction dates using exhaustive search; equal distance within ranges
 - gs_fit_top49: similar to gs_fit_best, but examined the top 49 maximum liklihood to see if there's cases where peaks are missed.
 - `check_setting.png`: these figures are used to check the validity of projected mobility.
-<<<<<<< HEAD
-
-=======
-### suppelemental
->>>>>>> master

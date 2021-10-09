@@ -598,7 +598,7 @@ plot_diff <- function(file){
       theme(strip.background = element_rect(fill = NA),
             legend.position = "none",
             # legend.text = element_text(size = 16),
-            # axis.text.y = element_text(size = 16),
+            axis.text = element_text(size = 18),
             # aspect.ratio = 1,
             plot.background = element_rect(fill = "white", color = "black"),
             plot.margin = unit(c(0, 0, -0.5, -0.5), "cm"),
@@ -620,10 +620,9 @@ plot_diff <- function(file){
 }
 
 #### Figure 4: decision map ####
-plot_decisions <- function(file){
+plot_decisions <- function(file, flip = FALSE){
   
   res <- read_rds(file)
-
   res[[3]] %>% 
     bind_rows(.id = "ROS") %>% 
     mutate(ROS = paste0("R",ROS),
@@ -693,15 +692,16 @@ plot_decisions <- function(file){
                          levels = as.character(unique(index$name)),
                          labels = metric_labels))
   
-
   # index <- tab2 %>% group_by(name, ROS) %>% tally()
   set3 <- plot_diff(file)
+  for(i in 1:length(set3)){
+    set3[[i]] <- set3[[i]] + theme(axis.text = element_text(size = 13))
+  }
   set1 <- list()
   no_outbreak <- as.logical(0 %in% tab1$policy %>% unique %>% as.character())
   
   for(i in 1:nrow(index)){
-  
-    
+
     if(no_outbreak == T){
       colors_tmp <- c("black", priority_colors,"grey")
       labels_tmp <- c("No Vac", "V+", "V20", "V60", "V75", 
@@ -754,18 +754,18 @@ plot_decisions <- function(file){
     if(i == 5 &
        file %in% c("data/intermediate/priority_selection_2_debug.rds",
                    "data/intermediate/priority_selection_2_w_debug.rds")){
-      set1[[i]] <- set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2])
+      set1[[i]] <-  set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2], na.value = "grey")
     }
     
     if(i == 6 &
        file %in% c("data/intermediate/priority_selection_2_w_debug.rds")){
-      set1[[i]] <- set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2])
+      set1[[i]] <- set1[[i]] + scale_fill_manual(breaks = 2, values = colors_tmp[2], na.value = "grey")
     }
     
 
     set1[[i]] + annotation_custom(ggplotGrob(set3[[i]]),
-                                  xmin = 45, xmax = 90,
-                                  ymin = 60, ymax = 75) -> set1[[i]]
+                                  xmin = 40, xmax = 90,
+                                  ymin = 58, ymax = 75) -> set1[[i]]
   
     
   }
@@ -791,58 +791,6 @@ plot_decisions <- function(file){
     
   }
   
-  # column labels
-  top_titles <- list()
-  top_label <- metric_labels
-  
-  for(i in 1:6){
-    # if((i%%2) != 0) {
-    if(i <= 5){
-      top_titles[[i]] <- ggdraw() + 
-        draw_label(
-          # top_label[(i+1)/2],
-          top_label[i],
-          fontface = 'bold',
-          x = 0.5,
-          size = 20
-        ) +
-        theme(
-          plot.margin = margin(0, 0, 0, 7)
-        )
-    }
-    # if((i%%2) == 0){
-    if(i == 6){
-      top_titles[[i]] <- ggdraw() +
-        draw_label(
-          "",
-          fontface = 'bold',
-          x = 0,
-          hjust = 1,
-        ) +
-        theme(
-          plot.margin = margin(0, 0, 0, 0)
-        )
-    }
-  }
-  
-  # row labels
-  side_titles <- list()
-  side_labels <- rollout_labels
-  
-  for(i in 1:4){
-    side_titles[[i]] <- ggdraw() + 
-      draw_label(
-        side_labels[i],
-        fontface = 'bold',
-        angle = 90,
-        y = 0.5,
-        size = 20
-      ) 
-    theme(
-      plot.margin = margin(0, 0, 0, 0)
-    )
-  }
-  
   set1[[3]] +
     scale_fill_manual(values = colors_tmp, 
                       na.value = "white",
@@ -857,51 +805,212 @@ plot_decisions <- function(file){
 
   
   # put all elements together
-  plot_grid(top_titles[[6]], top_titles[[1]], top_titles[[2]], top_titles[[3]], top_titles[[4]],
-            top_titles[[5]], # top_titles[[6]], top_titles[[7]], top_titles[[8]],
-            # top_titles[[9]], top_titles[[10]],
-            # top_titles[[2]], 
-            
-            # first row 
-            side_titles[[1]],
-            plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 14), # set2[[1]], 
-            plot_grid(set1[[5]]) + draw_figure_label("(B)", size = 14), # set2[[5]],
-            plot_grid(set1[[9]]) + draw_figure_label("(C)", size = 14), # set2[[9]], 
-            plot_grid(set1[[13]]) + draw_figure_label("(D)", size = 14), # (set2[[13]]), 
-            plot_grid(set1[[17]]) + draw_figure_label("(E)", size = 14), # (set2[[17]]), 
-
-            
-            # second row 
-            side_titles[[2]],
-            plot_grid(set1[[2]]) + draw_figure_label("(F)", size = 14), # set2[[2]], 
-            plot_grid(set1[[6]]) + draw_figure_label("(G)", size = 14), # set2[[6]],
-            plot_grid(set1[[10]]) + draw_figure_label("(H)", size = 14), # set2[[10]], 
-            plot_grid(set1[[14]]) + draw_figure_label("(I)", size = 14), # set2[[14]], 
-            plot_grid(set1[[18]]) + draw_figure_label("(J)", size = 14), # set2[[18]], 
-
-            
-            # third row
-            side_titles[[3]],
-            plot_grid(set1[[3]]) + draw_figure_label("(K)", size = 14), # set2[[3]], 
-            plot_grid(set1[[7]]) + draw_figure_label("(L)", size = 14), # set2[[7]],
-            plot_grid(set1[[11]]) + draw_figure_label("(M)", size = 14), # set2[[11]],
-            plot_grid(set1[[15]]) + draw_figure_label("(N)", size = 14), # set2[[15]], 
-            plot_grid(set1[[19]]) + draw_figure_label("(O)", size = 14), # set2[[19]], 
+  if(flip == FALSE){
+    # column labels
+    top_titles <- list()
+    top_label <- metric_labels
+    
+    for(i in 1:6){
+      # if((i%%2) != 0) {
+      if(i <= 5){
+        top_titles[[i]] <- ggdraw() + 
+          draw_label(
+            # top_label[(i+1)/2],
+            top_label[i],
+            fontface = 'bold',
+            x = 0.5,
+            size = 20
+          ) +
+          theme(
+            plot.margin = margin(0, 0, 0, 7)
+          )
+      }
+      # if((i%%2) == 0){
+      if(i == 6){
+        top_titles[[i]] <- ggdraw() +
+          draw_label(
+            "",
+            fontface = 'bold',
+            x = 0,
+            hjust = 1,
+          ) +
+          theme(
+            plot.margin = margin(0, 0, 0, 0)
+          )
+      }
+    }
+    
+    # row labels
+    side_titles <- list()
+    side_labels <- rollout_labels
+    
+    for(i in 1:4){
+      side_titles[[i]] <- ggdraw() + 
+        draw_label(
+          side_labels[i],
+          fontface = 'bold',
+          angle = 90,
+          y = 0.5,
+          size = 20
+        ) 
+      theme(
+        plot.margin = margin(0, 0, 0, 0)
+      )
+    }
+    
+    plot_grid(top_titles[[6]], top_titles[[1]], top_titles[[2]], top_titles[[3]], top_titles[[4]],
+              top_titles[[5]],
+              
+              # first row 
+              side_titles[[1]],
+              plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 20, fontface = "bold"), # set2[[1]], 
+              plot_grid(set1[[5]]) + draw_figure_label("(B)", size = 20, fontface = "bold"), # set2[[5]],
+              plot_grid(set1[[9]]) + draw_figure_label("(C)", size = 20, fontface = "bold"), # set2[[9]], 
+              plot_grid(set1[[13]]) + draw_figure_label("(D)", size = 20, fontface = "bold"), # (set2[[13]]), 
+              plot_grid(set1[[17]]) + draw_figure_label("(E)", size = 20, fontface = "bold"), # (set2[[17]]), 
+              
+              
+              # second row 
+              side_titles[[2]],
+              plot_grid(set1[[2]]) + draw_figure_label("(F)", size = 20, fontface = "bold"), # set2[[2]], 
+              plot_grid(set1[[6]]) + draw_figure_label("(G)", size = 20, fontface = "bold"), # set2[[6]],
+              plot_grid(set1[[10]]) + draw_figure_label("(H)", size = 20, fontface = "bold"), # set2[[10]], 
+              plot_grid(set1[[14]]) + draw_figure_label("(I)", size = 20, fontface = "bold"), # set2[[14]], 
+              plot_grid(set1[[18]]) + draw_figure_label("(J)", size = 20, fontface = "bold"), # set2[[18]], 
+              
+              
+              # third row
+              side_titles[[3]],
+              plot_grid(set1[[3]]) + draw_figure_label("(K)", size = 20, fontface = "bold"), # set2[[3]], 
+              plot_grid(set1[[7]]) + draw_figure_label("(L)", size = 20, fontface = "bold"), # set2[[7]],
+              plot_grid(set1[[11]]) + draw_figure_label("(M)", size = 20, fontface = "bold"), # set2[[11]],
+              plot_grid(set1[[15]]) + draw_figure_label("(N)", size = 20, fontface = "bold"), # set2[[15]], 
+              plot_grid(set1[[19]]) + draw_figure_label("(O)", size = 20, fontface = "bold"), # set2[[19]], 
+              
+              
+              # fourth row
+              side_titles[[4]],
+              plot_grid(set1[[4]]) + draw_figure_label("(P)", size = 20, fontface = "bold"), # set2[[4]], 
+              plot_grid(set1[[8]]) + draw_figure_label("(Q)", size = 20, fontface = "bold"), # set2[[8]],
+              plot_grid(set1[[12]]) + draw_figure_label("(R)", size = 20, fontface = "bold"), # set2[[12]], 
+              plot_grid(set1[[16]]) + draw_figure_label("(S)", size = 20, fontface = "bold"), # set2[[16]], 
+              plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 20, fontface = "bold"), # set2[[20]], 
+              
+              top_titles[[6]], top_titles[[6]], top_titles[[6]], legend_all,
+              ncol = 6, nrow = 6, 
+              align = "hv", rel_widths = c(2,rep(c(15),5)),
+              rel_heights = c(0.4, 1, 1, 1, 1, 0.3),
+              greedy = T, axis = "rlbt", vjust = 1) -> p
+  }
   
-            
-            # fourth row
-            side_titles[[4]],
-            plot_grid(set1[[4]]) + draw_figure_label("(P)", size = 14), # set2[[4]], 
-            plot_grid(set1[[8]]) + draw_figure_label("(Q)", size = 14), # set2[[8]],
-            plot_grid(set1[[12]]) + draw_figure_label("(R)", size = 14), # set2[[12]], 
-            plot_grid(set1[[16]]) + draw_figure_label("(S)", size = 14), # set2[[16]], 
-            plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 14), # set2[[20]], 
-            
-            top_titles[[6]], top_titles[[6]], top_titles[[6]], legend_all,
-            ncol = 6, nrow = 6, 
-            align = "hv", rel_widths = c(2,rep(c(15),5)),
-            rel_heights = c(0.4, 1, 1, 1, 1, 0.3),
-            greedy = T, axis = "rlbt", vjust = 1) -> p
+  if(flip == TRUE){
+    # column labels
+    top_titles <- list()
+    top_label <- rollout_labels
+    
+    for(i in 1:5){
+      # if((i%%2) != 0) {
+      if(i <= 4){
+        top_titles[[i]] <- ggdraw() + 
+          draw_label(
+            # top_label[(i+1)/2],
+            top_label[i],
+            fontface = 'bold',
+            x = 0.5,
+            size = 20
+          ) +
+          theme(
+            plot.margin = margin(0, 0, 0, 7)
+          )
+      }
+      # if((i%%2) == 0){
+      if(i == 5){
+        top_titles[[i]] <- ggdraw() +
+          draw_label(
+            "",
+            fontface = 'bold',
+            x = 0,
+            hjust = 1,
+          ) +
+          theme(
+            plot.margin = margin(0, 0, 0, 0)
+          )
+      }
+    }
+    
+    # row labels
+    side_titles <- list()
+    side_labels <- c("Deaths", "Cases", "cLY Loss",
+                     "cQALY Loss", "HC Loss")#metric_labels
+    
+    for(i in 1:5){
+      side_titles[[i]] <- ggdraw() + 
+        draw_label(
+          side_labels[i],
+          fontface = 'bold',
+          angle = 90,
+          y = 0.5,
+          size = 20
+        ) 
+      theme(
+        plot.margin = margin(0, 0, 0, 0)
+      )
+    }
+    
+    plot_grid(top_titles[[5]], top_titles[[1]], top_titles[[2]], top_titles[[3]], top_titles[[4]],
+              # top_titles[[5]], # top_titles[[6]], top_titles[[7]], top_titles[[8]],
+              # top_titles[[9]], top_titles[[10]],
+              # top_titles[[2]], 
+              
+              # first row 
+              side_titles[[1]],
+              plot_grid(set1[[1]]) + draw_figure_label("(A)", size = 20, fontface = "bold"), # set2[[1]], 
+              plot_grid(set1[[2]]) + draw_figure_label("(B)", size = 20, fontface = "bold"), # set2[[5]],
+              plot_grid(set1[[3]]) + draw_figure_label("(C)", size = 20, fontface = "bold"), # set2[[9]], 
+              plot_grid(set1[[4]]) + draw_figure_label("(D)", size = 20, fontface = "bold"), # (set2[[13]]), 
+
+              
+              
+              # second row 
+              side_titles[[2]],
+              plot_grid(set1[[5]]) + draw_figure_label("(E)", size = 20, fontface = "bold"), # (set2[[17]]), 
+              plot_grid(set1[[6]]) + draw_figure_label("(F)", size = 20, fontface = "bold"), # set2[[2]], 
+              plot_grid(set1[[7]]) + draw_figure_label("(G)", size = 20, fontface = "bold"), # set2[[6]],
+              plot_grid(set1[[8]]) + draw_figure_label("(H)", size = 20, fontface = "bold"), # set2[[10]], 
+
+              
+              
+              # third row
+              side_titles[[3]],
+              plot_grid(set1[[9]]) + draw_figure_label("(I)", size = 20, fontface = "bold"), # set2[[14]], 
+              plot_grid(set1[[10]]) + draw_figure_label("(J)", size = 20, fontface = "bold"), # set2[[18]], 
+              plot_grid(set1[[11]]) + draw_figure_label("(K)", size = 20, fontface = "bold"), # set2[[3]], 
+              plot_grid(set1[[12]]) + draw_figure_label("(L)", size = 20, fontface = "bold"), # set2[[7]],
+
+              
+              
+              # fourth row
+              side_titles[[4]],
+              plot_grid(set1[[13]]) + draw_figure_label("(M)", size = 20, fontface = "bold"), # set2[[11]],
+              plot_grid(set1[[14]]) + draw_figure_label("(N)", size = 20, fontface = "bold"), # set2[[15]], 
+              plot_grid(set1[[15]]) + draw_figure_label("(O)", size = 20, fontface = "bold"), # set2[[19]], 
+              plot_grid(set1[[16]]) + draw_figure_label("(P)", size = 20, fontface = "bold"), # set2[[4]], 
+              
+              # fifth row
+              side_titles[[5]],
+              plot_grid(set1[[17]]) + draw_figure_label("(Q)", size = 20, fontface = "bold"), # set2[[8]],
+              plot_grid(set1[[18]]) + draw_figure_label("(R)", size = 20, fontface = "bold"), # set2[[12]], 
+              plot_grid(set1[[19]]) + draw_figure_label("(S)", size = 20, fontface = "bold"), # set2[[16]], 
+              plot_grid(set1[[20]]) + draw_figure_label("(T)", size = 20, fontface = "bold"), # set2[[20]], 
+              
+              top_titles[[5]], top_titles[[5]], top_titles[[5]], legend_all,
+              ncol = 5, nrow = 7, 
+              align = "hv", rel_widths = c(2,rep(c(15),4)),
+              rel_heights = c(0.2, 1, 1, 1, 1, 1, 0.3),
+              greedy = T, axis = "rlbt", vjust = 1) -> p
+  }
+  
+
   
 }
 

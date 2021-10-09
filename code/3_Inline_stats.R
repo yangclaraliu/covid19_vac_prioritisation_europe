@@ -49,7 +49,8 @@ tmp %>% pivot_wider(names_from = name,
 
 
 ####
-res <- read_rds("data/intermediate/priority_selection_2.rds")
+res <- read_rds("data/intermediate/priority_selection_2_debug.rds")
+
 res[[3]] %>% 
   bind_rows(.id = "ROS") %>% 
   mutate(ROS = paste0("R",ROS),
@@ -723,4 +724,53 @@ epi %>%
          n_tile = ntile(deaths,3)) %>% 
   View()
   filter(loc %in% c("GEO", "HUN","GBR"))
+
+  #####
+res <- read_rds("data/intermediate/priority_selection_2_debug.rds")
+
+tmp <-   res[[3]]  %>% 
+  bind_rows(.id = "ROS") %>% 
+  mutate(ROS = paste0("R",ROS),
+         wb = countrycode(population, "country.name", "wb")) %>% 
+  data.table::melt(., id.vars = c("ROS", "policy", "run", "w", "wb", "population")) %>% 
+  dplyr::filter(variable %in% c("cases", "death_o",
+                                "adjLE", 
+                                # "VSLmlns_pd",
+                                "QALYloss",
+                                "HC"),
+                w == "2022",
+                !wb %in% members_remove) %>% group_by(ROS, wb, variable) %>% 
+  mutate(rk = rank(value)) %>% 
+  filter(rk == 1)
+
+tmp %>% 
+  dplyr::select(ROS, variable, policy, wb) %>% 
+  pivot_wider(names_from = variable, values_from = policy) %>% 
+  filter(cases == death_o,
+         cases == adjLE,
+         cases == QALYloss,
+         cases == HC,
+         death_o == adjLE,
+         death_o == QALYloss,
+         death_o == HC,
+         adjLE == QALYloss,
+         adjLE == HC,
+         QALYloss == HC) %>% 
+  dplyr::select(ROS, wb) %>% group_by(ROS) %>% group_split() %>% map(pull, wb) -> tmp
   
+tmp[[1]] %in% tmp[[2]]
+# group_by(ROS) %>% tally()
+
+tmp %>% 
+  dplyr::select(ROS, variable, policy, wb) %>% 
+  pivot_wider(names_from = ROS, values_from = policy) %>% 
+  filter(R1 == R2, R1 == R3, R1 == R4,
+         R2 == R3, R2 == R4,
+         R3 == R4) %>% 
+  group_by(variable) %>% tally()
+
+tmp %<>% 
+  dplyr::select(wb, ROS, variable, policy) %>% 
+  pivot_wider(names_from = variable, values_from = policy)
+
+write_rds(tmp, "data/Figure4Res_byCountry.rds")

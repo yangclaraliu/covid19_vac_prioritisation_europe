@@ -301,13 +301,21 @@ p1_2_500 <- plot_fit_examples("data/intermediate/fit_examples_2_500.rds")
 p4_2 <- plot_non_S("data/intermediate/non_S_2_debug.rds")
 p4_3 <- plot_non_S("data/intermediate/non_S_3_debug.rds")
 
-plot_grid(p1_2_500, NULL, p4_2, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
+p4_2_newbar <- p4_2 + scale_fill_brewer(palette = "YlGnBu",
+                             na.value = "grey90", #discrete = T,
+                             na.translate = F, direction = 1,
+                             labels = c("2-5%", rep("",3),
+                                        "11%", rep("",3),
+                                        "22-27%")) 
+  
+
+plot_grid(p1_2_500, NULL, p4_2_newbar, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_2
 
 plot_grid(p1_3, NULL, p4_3, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_3
 
-ggsave("figs/Fig3_2_R1.png",fig3_2, width = 25, height = 15)
+ggsave("figs/Fig3_2_R2.png",fig3_2, width = 25, height = 15)
 ggsave("figs/supplemental/Fig3_3_debug_R1.png",fig3_3, width = 25, height = 15)
 
 p_t_2 <- plot_fitted_res(model_selected_2)
@@ -325,8 +333,15 @@ ggsave("figs/supplemental/p_rho_3.png",p_rho_3, width = 25, height = 15)
 
 #### Figure 4: vaccination strategy selected by decision criteria ####
 decisions_2 <- plot_decisions("data/intermediate/priority_selection_2_debug.rds")
-ggsave(filename = "figs/Fig4_2_R1.png", decisions_2, width = 24, 
+ggsave(filename = "figs/Fig4_2_R2.png", decisions_2, width = 24, 
        height = 13.5, dpi = 500)
+
+decisions_2_f <- plot_decisions("data/intermediate/priority_selection_2_debug.rds",
+                              flip = T)
+ggsave(filename = "figs/Fig4_2_R2_f.png", decisions_2_f, width = 14, 
+       height = 12, dpi = 500)
+
+
 
 decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds")
 ggsave(filename = "figs/Fig4_2_w_debug_R1.png", decisions_2_w, width = 24,
@@ -404,31 +419,36 @@ tmp_fp %>%
   tally %>% pivot_wider(names_from = variable, values_from = n)  %>%
   group_by(policy) %>%
   pivot_longer(cols = metric_labels) %>% mutate(value = if_else(is.na(value), as.integer(0), value)) %>%
-  mutate(name = factor(name, levels = metric_labels)) %>% 
-  ggplot(., aes(x = profile, y = value, group = policy, color = policy)) +
-  geom_line(size = 1.5) + geom_point(size = 2) +
-  facet_grid(ROS~name, switch = "y") +
-  scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
+  mutate(name = factor(name, levels = metric_labels,
+                       labels = c("Deaths", "Cases", "cLY Loss",
+                                  "cQALY Loss", "HC Loss"))) %>% 
+  ggplot(., aes(x = profile, y = value, group = policy, color = policy, linetype = policy)) +
+  geom_line(size = 1.5) + geom_point(size = 3) +
+  facet_grid(name~ROS, switch = "y") +
+  scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75"), name = "") +
+  scale_linetype_manual(values = c(1,1,2,2), labels = c("V+", "V20", "V60", "V75"), name = "") +
   labs(x = "Vaccine Profile", y = "# of Countries Optimising by using a certain strategy", fill = "", color = "") +
   theme_bw() +
   theme(strip.background = element_rect(fill = NA, color = "black"),
         legend.position = "top",
-        strip.text = element_text(size = 18),
+        strip.text = element_text(size = 20),
         # strip.background = element_rect(colour = "black"),
-        legend.text = element_text(size = 18),
-        axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
+        legend.text = element_text(size = 20),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
         # legend.text = element_text(size = 16),
         # axis.text.y = element_text(size = 16),
         # aspect.ratio = 1,
         plot.margin = unit(c(0, 0, 0, 0), "cm")#,
         # strip.text = element_text(size = 16)
   )+                               # Change margins of ggplot2 plot
-  theme(plot.margin = unit(c(0.3, 0.3, 0.3, 0.3), "cm")) -> p
+  theme(plot.margin = unit(c(0.3, 0.3, 0.3, 0.3), "cm"),
+        legend.key.width = unit(3, "line")) -> p
 
-p <- egg::tag_facet(p, size = 8)
+p <- p + tagger::tag_facets(tag_prefix = "(") +
+  theme(tagger.panel.tag.text = element_text(size = 20, face = "bold"))
 
-ggsave("figs/fig5_R1.png", p, width = 22,height = 15)
+ggsave("figs/fig5_R2.png", p, width = 12,height = 15)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
@@ -456,34 +476,34 @@ ggsave("figs/fig5_R1.png", p, width = 22,height = 15)
 #                      labels = c("V0", "V+", "V20", "V60","V75")) +
 #   facet_wrap(~wb)
 
-ggplot(tmp_fp, aes(y = wb, 
-                x = profile, 
-                fill = policy, 
-                color = policy)) +
-  # geom_bar(stat = "identity", width = 1) +
-  # geom_tile(color = "black") +
-  geom_tile() +
-  facet_nested(ROS ~ variable , scales = "free") +
-  scale_y_discrete(guide = guide_axis(n.dodge = 2)) +
-  scale_fill_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
-  scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
-  labs(x = "Vaccine Profile", y = "", fill = "", color = "") +
-  theme_cowplot() +
-  theme(strip.background = element_rect(fill = NA),
-        legend.position = "bottom",
-        strip.text = element_text(size = 18),
-        # strip.background = element_rect(colour = "black"),
-        legend.text = element_text(size = 18),
-        axis.text = element_text(size = 18),
-        axis.title = element_text(size = 18),
-        # legend.text = element_text(size = 16),
-        # axis.text.y = element_text(size = 16),
-        # aspect.ratio = 1,
-        plot.margin = unit(c(0, 0, 0, 0), "cm")#,
-        # strip.text = element_text(size = 16)
-        ) -> p
-
-p <- egg::tag_facet(p)
-
-ggsave("figs/fig5_updated.png", p, width = 15,height = 20, dpi = 500)
-
+# ggplot(tmp_fp, aes(y = wb, 
+#                 x = profile, 
+#                 fill = policy, 
+#                 color = policy)) +
+#   # geom_bar(stat = "identity", width = 1) +
+#   # geom_tile(color = "black") +
+#   geom_tile() +
+#   facet_nested(ROS ~ variable , scales = "free") +
+#   scale_y_discrete(guide = guide_axis(n.dodge = 2)) +
+#   scale_fill_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
+#   scale_color_manual(values = c(priority_colors), labels = c("V+", "V20", "V60", "V75")) +
+#   labs(x = "Vaccine Profile", y = "", fill = "", color = "") +
+#   theme_cowplot() +
+#   theme(strip.background = element_rect(fill = NA),
+#         legend.position = "bottom",
+#         strip.text = element_text(size = 18),
+#         # strip.background = element_rect(colour = "black"),
+#         legend.text = element_text(size = 18),
+#         axis.text = element_text(size = 18),
+#         axis.title = element_text(size = 18),
+#         # legend.text = element_text(size = 16),
+#         # axis.text.y = element_text(size = 16),
+#         # aspect.ratio = 1,
+#         plot.margin = unit(c(0, 0, 0, 0), "cm")#,
+#         # strip.text = element_text(size = 16)
+#         ) -> p
+# 
+# p <- egg::tag_facet(p)
+# 
+# ggsave("figs/fig5_updated.png", p, width = 15,height = 20, dpi = 500)
+# 
