@@ -287,7 +287,7 @@ plot_grid(row_1, row_2,
           axis = "l", ncol = 1,
           rel_heights = c(1.2, 1)) -> p
 
-ggsave("figs/fig2_R1.png", p, width = 20, height = 14) 
+ggsave("figs/fig2_R2.tiff", p, width = 20, height = 14, dpi = 300) 
 
 #### Figure 3: quality of fitting ####
 ##### Panel A-C: fitting time-series examples #####
@@ -296,7 +296,6 @@ p1_2 <- plot_fit_examples("data/intermediate/fit_examples_2.rds")
 p1_3 <- plot_fit_examples("data/intermediate/fit_examples_3.rds")
 
 p1_2_500 <- plot_fit_examples("data/intermediate/fit_examples_2_500.rds")
-
  ##### Panel D: predicted proportion of immune population #####
 p4_2 <- plot_non_S("data/intermediate/non_S_2_debug.rds")
 p4_3 <- plot_non_S("data/intermediate/non_S_3_debug.rds")
@@ -315,7 +314,7 @@ plot_grid(p1_2_500, NULL, p4_2_newbar, ncol = 3, rel_widths = c(1, 0.1,4), align
 plot_grid(p1_3, NULL, p4_3, ncol = 3, rel_widths = c(1, 0.1,4), align = "h", 
           axis = "bt") -> fig3_3
 
-ggsave("figs/Fig3_2_R2.png",fig3_2, width = 25, height = 15)
+ggsave("figs/Fig3_2_R2.tiff",fig3_2, width = 25, height = 15, dpi = 300)
 ggsave("figs/supplemental/Fig3_3_debug_R1.png",fig3_3, width = 25, height = 15)
 
 p_t_2 <- plot_fitted_res(model_selected_2)
@@ -338,18 +337,20 @@ ggsave(filename = "figs/Fig4_2_R2.png", decisions_2, width = 24,
 
 decisions_2_f <- plot_decisions("data/intermediate/priority_selection_2_debug.rds",
                               flip = T)
-ggsave(filename = "figs/Fig4_2_R2_f.png", decisions_2_f, width = 14, 
-       height = 12, dpi = 500)
+ggsave(filename = "figs/fig4_2_R2_f.tiff", decisions_2_f, width = 14, 
+       height = 12, dpi = 300)
 
 
 
-decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds")
-ggsave(filename = "figs/Fig4_2_w_debug_R1.png", decisions_2_w, width = 24,
-       height = 13.5)
+decisions_2_w <- plot_decisions("data/intermediate/priority_selection_2_w_debug.rds",
+                                flip = T)
+ggsave(filename = "figs/Fig4_2_w_debug_R1_f.png", decisions_2_w, width = 14,
+       height = 12)
 
-decisions_3 <- plot_decisions("data/intermediate/priority_selection_3_debug.rds")
-ggsave(filename = "figs/Fig4_3_debug_R1.png", decisions_3, width = 24, 
-       height = 13.5)
+decisions_3 <- plot_decisions("data/intermediate/priority_selection_3_debug.rds",
+                              flip = T)
+ggsave(filename = "figs/Fig4_3_debug_R2_f.png", decisions_3, width = 14, 
+       height = 12)
 
 decisions_3_w <- plot_decisions("data/intermediate/priority_selection_3_w_debug.rds")
 ggsave(filename = "figs/Fig4_3_w_debug_R1.png", decisions_3_w, width = 24, height = 13.5)
@@ -448,7 +449,7 @@ tmp_fp %>%
 p <- p + tagger::tag_facets(tag_prefix = "(") +
   theme(tagger.panel.tag.text = element_text(size = 20, face = "bold"))
 
-ggsave("figs/fig5_R2.png", p, width = 12,height = 15)
+ggsave("figs/fig5_R2.tiff", p, width = 12,height = 15)
 
 # tmp_fp %>% 
 #   #filter(ROS == rollout_labels[1]) %>% 
