@@ -1,7 +1,7 @@
 # Optimising health and economic impacts of COVID-19 vaccine rollout strategies in the WHO European Region
 
 
-[Yang Liu](https://github.com/yangclaraliu), [Frank Sandmann](https://github.com/FGSandmann), [Rosanna Barnard](https://github.com/rosannaclairebarnard), [Carl AB Pearson](https://github.com/pearsonca), [Stefan Flasche](https://github.com/StefanFlasche), [Mark Jit](https://www.lshtm.ac.uk/aboutus/people/jit.mark)
+[Yang Liu](https://github.com/yangclaraliu), [Frank Sandmann](https://github.com/FGSandmann), [Rosanna C Barnard](https://github.com/rosannaclairebarnard), [Carl AB Pearson](https://github.com/pearsonca), [CMMID COVID-19 Working Group](https://cmmid.github.io/topics/covid19/), Roberta Pastore, Richard Pebody, [Stefan Flasche](https://github.com/StefanFlasche), [Mark Jit](https://www.lshtm.ac.uk/aboutus/people/jit.mark)
 ## Code
 - `0_LoadData.R`: load data for geography, epi parameters (susceptibility, clinical fractions), demographics, contacts, health economic parameters, mobility, stringency, COVID-19 mortality; establish scenario to be tested; load support functions and packages
 	- `util_analysis.R`: helper functions for analysis. core functions are:
@@ -23,16 +23,7 @@ pacman::p_load(
 -  `2_PlotResults.R`
   - `2_1_Plot_Supplemental.R` 
 - `misc_LitRev.`: code to extract literature from *medRxiv*
-- covid_for_fitting: this framework was developed for the paper titled [Association of tiered restrictions and a second lockdown with COVID-19 deaths and hospital admissions in England: a modelling stud](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30984-1/fulltext) by [Nicholas Davies](https://github.com/nicholasdavies/covid-tiers) et al. and can be found [here](https://github.com/nicholasdavies/covid-tiers/tree/main/fitting/covidm_for_fitting).
+- covid_for_fitting: this framework was developed for the paper titled [Association of tiered restrictions and a second lockdown with COVID-19 deaths and hospital admissions in England: a modelling study](https://www.thelancet.com/journals/laninf/article/PIIS1473-3099(20)30984-1/fulltext) by [Nicholas Davies](https://github.com/nicholasdavies/covid-tiers) et al. and can be found [here](https://github.com/nicholasdavies/covid-tiers/tree/main/fitting/covidm_for_fitting).
 
 ## data
 - For those who are interested in country-, roll-out scenario- and decision-making metric-specific results, please see `data/Figure4Res_byCountry.rds`.
-
-## figs
-### intermediate
-- DEoptim_fit_2: fitting for R0 and infection introduction dates `DEoptim`
-- DEoptim_fit_3: fitting for R0, infection introduction dates, and under-reporting rates
-- DEoptim_fit_3_1.5: similar to DEoptim_fit_3 but we allow over-reporting; reporting rate is not constrain to (0, 1] here, but (0, 1.5] to account for conditions where reported COVID-19 deaths is higher for actual COVID-19 deaths. 
-- gs_fit_best: fitting for R0 and infection introduction dates using exhaustive search; equal distance within ranges
-- gs_fit_top49: similar to gs_fit_best, but examined the top 49 maximum liklihood to see if there's cases where peaks are missed.
-- `check_setting.png`: these figures are used to check the validity of projected mobility.
